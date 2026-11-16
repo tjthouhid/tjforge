@@ -154,3 +154,7 @@ templates/
 - Claude Code picks up agent files without a restart, except in a project that had no `.claude/agents` folder before. There they load on the next session, and until then tjforge falls back to general-purpose agents with an explicit model.
 - `install.py` is safe to re-run. It only writes what is missing or out of date, and `--check` exits 1 when anything is missing.
 - Nothing is committed during init unless you ask.
+
+## License
+
+[MIT](LICENSE)
