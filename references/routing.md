@@ -1,0 +1,70 @@
+# Model routing
+
+Goal: the cheapest model that gets it right the first time. A wrong cheap attempt
+costs more than one correct expensive one; an expensive model on mechanical work
+is waste.
+
+## Tiers
+
+| Tier | Model | Who | Use for |
+|---|---|---|---|
+| Think | Fable 5.2 | main session, or `tj-architect` | research, architecture, planning, unknown-cause debugging, ambiguous requirements, trade-off decisions, review of high-risk changes |
+| Build | Opus 5.5 | `tj-implementer`, `tj-reviewer` | multi-file features, non-trivial logic, bug fixes with a known cause, refactors, migrations, auth/payments/data code, code review |
+| Fill | Sonnet 5.5 | `tj-builder`, `Explore` | fully specified mechanical work: boilerplate, CRUD that copies an existing pattern, simple tests, docs, renames, config, dependency bumps, lint fixes, codebase search |
+| Inline | current | main session | one file, about 20 lines or fewer, obvious change. No delegation |
+
+## Choosing
+
+1. Trivial? Do it inline.
+2. Is the cause or the design unknown? Think tier first. Do not hand an open
+   question to a Build or Fill agent.
+3. Could a careful junior do it from the brief with no decisions left? Fill.
+4. Otherwise Build.
+
+A task is "big" when it touches more than 3 files, adds a new module or data
+model, changes a public interface, or has an unknown root cause. Big tasks get a
+plan from the Think tier before any code is written. Keep the plan in the
+conversation unless the user asks for a file.
+
+## Escalation
+
+- Fill agent fails once or reports ambiguity: re-dispatch to Build with what it
+  found. Do not retry the same brief on the same tier.
+- Build agent cannot find the cause after one real attempt: back to Think.
+- Never downgrade security-sensitive work to Fill.
+
+## Dispatch
+
+- Split a plan into tasks whose file sets do not overlap. Run those in parallel
+  in one message. Two writers never share a file.
+- Search and reading that only informs the plan goes to `Explore` on Sonnet.
+- Do not delegate what a handful of tool calls would settle.
+
+Brief template (the agent knows nothing else):
+
+```
+Goal: <one sentence, the outcome>
+Context: <paths to read first; decisions already made; what was ruled out>
+Constraints: <the PROJECT-PROFILE sections that apply; DESIGN.md if UI>
+Change: <files to touch, interfaces/signatures, data shapes>
+Out of scope: <what not to touch>
+Done when: <observable acceptance criteria>
+Verify with: <exact commands>
+Return: files changed, commands run with real results, anything unverified or surprising
+```
+
+## After an agent returns
+
+Its report is a claim. Read the diff and run (or re-read the output of) the
+verify commands before telling the user it is done. Risky change (auth, money,
+data migration, public API, concurrency): dispatch `tj-reviewer` with the diff,
+not your conclusion.
+
+## Honesty
+
+- If the main session is not Fable 5.2, say so once and use `tj-architect` for
+  Think-tier work.
+- If the `tj-*` agents are not loaded yet (installed this session), use the
+  Agent tool with `general-purpose` and an explicit `model`.
+- If a model is unavailable, say so. Never report that a model did work it did
+  not do.
