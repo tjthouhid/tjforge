@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>tjforge social card</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=block" rel="stylesheet">
+<style>
+:root {
+  --paper: #F1ECE2; --paper-2: #E7E0D2; --ink: #14213D; --ink-soft: #3D4A66;
+  --muted: #6B7385; --line: #C9C1B1; --signal: #E4572E;
+  --fable: #6A4C93; --sonnet: #2F7D5B;
+  --code-bg: #14213D; --code-fg: #E9E4D8; --code-dim: #8A94AB;
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { background: var(--paper); }
+body { overflow: hidden; color: var(--ink); font-family: "Instrument Sans", sans-serif; }
+.card {
+  position: relative; overflow: hidden;
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(rgba(20,33,61,.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20,33,61,.06) 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+.brand { display: flex; align-items: center; gap: 14px; }
+.brand svg { width: 52px; height: 52px; }
+.brand b { font: 600 34px/1 "IBM Plex Mono", monospace; letter-spacing: -.02em; }
+.tag { font: 500 15px/1 "IBM Plex Mono", monospace; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+h1 { font: 400 1px/.86 "Instrument Serif", serif; letter-spacing: -.025em; }
+h1 em { font-style: italic; color: var(--signal); }
+.tiers { display: flex; flex-wrap: wrap; gap: 12px; }
+.tier { display: flex; align-items: center; gap: 10px; border: 1.5px solid var(--ink); border-radius: 4px; padding: 11px 15px; font: 500 18px/1 "IBM Plex Mono", monospace; background: var(--paper); }
+.tier i { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+.url { font: 500 22px/1 "IBM Plex Mono", monospace; display: flex; align-items: center; gap: 16px; white-space: nowrap; }
+.url em { color: var(--signal); font-style: normal; }
+.pill { white-space: nowrap; font: 500 15px/1 "IBM Plex Mono", monospace; background: var(--ink); color: var(--paper); padding: 9px 12px; border-radius: 4px; }
+.term { background: var(--code-bg); color: var(--code-fg); border-radius: 8px; font: 400 17px/1.7 "IBM Plex Mono", monospace; box-shadow: 14px 14px 0 var(--signal); overflow: hidden; }
+.term .bar { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,.08); display: flex; gap: 7px; }
+.term .bar i { width: 11px; height: 11px; border-radius: 50%; background: rgba(255,255,255,.2); }
+.term pre { padding: 16px 20px 20px; font: inherit; white-space: pre; }
+.p { color: var(--signal); } .d { color: var(--code-dim); } .w { color: #8FD3B0; } .k { color: #F2C66D; }
+.strike { text-decoration: line-through; color: #F4A68D; }
+
+/* landscape 1200 x 630 (link preview) */
+.wide { width: 1200px; height: 630px; padding: 56px 64px; display: grid; grid-template-columns: 1fr 470px; gap: 48px; }
+.wide .left { display: flex; flex-direction: column; justify-content: space-between; }
+.wide h1 { font-size: 112px; margin-top: 18px; }
+.wide .term { align-self: center; }
+
+/* square 1080 x 1080 (feed post) */
+.square { width: 1080px; height: 1080px; padding: 72px; display: flex; flex-direction: column; justify-content: space-between; }
+.square h1 { font-size: 150px; margin-top: 26px; }
+.square .lede { font-size: 30px; line-height: 1.35; color: var(--ink-soft); max-width: 24ch; margin-top: 26px; }
+.square .mid { margin-bottom: 8px; }
+.square .mid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: end; }
+.square .term { font-size: 18px; }
+.square .tiers { flex-direction: column; align-items: flex-start; }
+.square .tier { font-size: 20px; }
+.square .foot { display: flex; justify-content: space-between; align-items: center; border-top: 1.5px solid var(--ink); padding-top: 26px; }
+</style>
+</head>
+<body>
+
+<div class="card wide" id="wide">
+  <div class="left">
+    <div>
+      <div class="brand">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="#14213D"/><path d="M7 12h18l-3 5H10z" fill="#E4572E"/><rect x="14" y="17" width="4" height="6" fill="#F1ECE2"/><rect x="9" y="23" width="14" height="3" fill="#F1ECE2"/></svg>
+        <b>tjforge</b>
+      </div>
+      <h1>Decide <em>once.</em><br>Build the<br>same way.</h1>
+    </div>
+    <div>
+      <div class="tiers" style="margin-bottom:26px">
+        <span class="tier"><i style="background:var(--fable)"></i>Fable plans</span>
+        <span class="tier"><i style="background:var(--ink)"></i>Opus builds</span>
+        <span class="tier"><i style="background:var(--sonnet)"></i>Sonnet fills</span>
+      </div>
+      <div class="url"><span class="pill">Claude Code skill</span><span>tjthouhid.github.io/<em>tjforge</em></span></div>
+    </div>
+  </div>
+  <div class="term">
+    <div class="bar"><i></i><i></i><i></i></div>
+<pre><span class="p">› </span>/tjforge init
+<span class="d">  detect  next · ts strict · has UI</span>
+<span class="k">  ? </span>Design: A. Ember Cinema
+<span class="w">  wrote </span>docs/PROJECT-PROFILE.md
+<span class="w">  wrote </span>DESIGN.md
+<span class="w">  wrote </span>.claude/agents/tj-*.md
+<span class="w">  wrote </span>attribution off
+<span class="w">  wrote </span>.githooks/commit-msg
+
+<span class="d">  commit:</span>
+  feat: add checkout page
+  <span class="strike">Co-Authored-By: Claude</span></pre>
+  </div>
+</div>
+
+<div class="card square" id="square">
+  <div>
+    <div class="brand">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="#14213D"/><path d="M7 12h18l-3 5H10z" fill="#E4572E"/><rect x="14" y="17" width="4" height="6" fill="#F1ECE2"/><rect x="9" y="23" width="14" height="3" fill="#F1ECE2"/></svg>
+      <b>tjforge</b>
+    </div>
+    <h1>Decide <em>once.</em><br>Build the<br>same way.</h1>
+    <p class="lede">One command writes your project's rules. Every Claude Code session follows them.</p>
+  </div>
+  <div class="mid">
+    <div class="tiers">
+      <span class="tag" style="margin-bottom:6px">Right model, every job</span>
+      <span class="tier"><i style="background:var(--fable)"></i>Fable 5.2 · plans</span>
+      <span class="tier"><i style="background:var(--ink)"></i>Opus 5.5 · builds</span>
+      <span class="tier"><i style="background:var(--sonnet)"></i>Sonnet 5.5 · fills in</span>
+    </div>
+    <div class="term">
+      <div class="bar"><i></i><i></i><i></i></div>
+<pre><span class="p">› </span>/tjforge init
+<span class="w">  wrote </span>PROJECT-PROFILE.md
+<span class="w">  wrote </span>DESIGN.md
+<span class="w">  wrote </span>4 agents
+<span class="w">  wrote </span>commit hook
+  <span class="strike">Co-Authored-By: Claude</span></pre>
+    </div>
+  </div>
+  <div class="foot">
+    <div class="url"><span>tjthouhid.github.io/<em>tjforge</em></span></div>
+    <span class="pill">Free · MIT · ★ on GitHub</span>
+  </div>
+</div>
+
+<script>
+// ?card=square renders only the square card; default renders only the wide one.
+const which = new URLSearchParams(location.search).get('card') === 'square' ? 'square' : 'wide';
+document.getElementById(which === 'square' ? 'wide' : 'square').remove();
+</script>
+</body>
+</html>
