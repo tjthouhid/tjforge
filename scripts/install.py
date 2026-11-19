@@ -41,7 +41,7 @@ def report(state, what):
 
 
 def sync_file(src, dst, executable=False):
-    """Copy src to dst if different. Returns True when already in sync."""
+    """Copy src to dst if missing or different."""
     want = src.read_text()
     rel = dst.relative_to(ROOT)
     if dst.exists() and dst.read_text() == want:
@@ -49,14 +49,15 @@ def sync_file(src, dst, executable=False):
             dst.chmod(0o755)
         report("ok", rel)
         return
+    existed = dst.exists()
     if CHECK:
-        report("MISSING", rel)
+        report("MISSING", f"{rel}{' (outdated)' if existed else ''}")
         return
     dst.parent.mkdir(parents=True, exist_ok=True)
     dst.write_text(want)
     if executable:
         dst.chmod(0o755)
-    report("wrote", rel)
+    report("updated" if existed else "wrote", rel)
 
 
 def agents():

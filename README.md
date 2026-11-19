@@ -142,10 +142,10 @@ your-project/
 ├── .claude/
 │   ├── settings.json             attribution off (existing keys are merged, not replaced)
 │   └── agents/
-│       ├── tj-architect.md       Fable 5.2, read-only research and planning
-│       ├── tj-implementer.md     Opus 5.5, implementation
-│       ├── tj-reviewer.md        Opus 5.5, read-only independent review
-│       └── tj-builder.md         Sonnet 5.5, mechanical work
+│       ├── tj-architect.md       Fable 5.2 · high, read-only research and planning
+│       ├── tj-implementer.md     Opus 5.5 · medium, implementation
+│       ├── tj-reviewer.md        Opus 5.5 · high, read-only independent review
+│       └── tj-builder.md         Sonnet 5.5 · low, mechanical work
 └── .githooks/commit-msg          strips AI-attribution trailers
 ```
 
@@ -163,12 +163,12 @@ python3 ~/.claude/skills/tjforge/scripts/install.py
 
 ## Model routing
 
-| Tier | Model | Agent | Use for |
-|---|---|---|---|
-| Think | Fable 5.2 | main session, `tj-architect` | research, architecture, plans for big tasks, unknown-cause bugs, trade-offs |
-| Build | Opus 5.5 | `tj-implementer`, `tj-reviewer` | multi-file features, real logic, known-cause fixes, refactors, migrations, security-sensitive code, review |
-| Fill | Sonnet 5.5 | `tj-builder`, `Explore` | fully specified boilerplate, CRUD from an existing pattern, simple tests, docs, renames, config, codebase search |
-| Inline | current | main session | one file, about 20 lines, obvious change |
+| Tier | Model | Agent | Effort | Use for |
+|---|---|---|---|---|
+| Think | Fable 5.2 | main session, `tj-architect` | your session setting · `high` | research, architecture, plans for big tasks, unknown-cause bugs, trade-offs |
+| Build | Opus 5.5 | `tj-implementer`, `tj-reviewer` | `medium` · `high` | multi-file features, real logic, known-cause fixes, refactors, migrations, security-sensitive code, review |
+| Fill | Sonnet 5.5 | `tj-builder`, `Explore` | `low` · default | fully specified boilerplate, CRUD from an existing pattern, simple tests, docs, renames, config, codebase search |
+| Inline | current | main session | session | one file, about 20 lines, obvious change |
 
 How a task is routed:
 
@@ -211,6 +211,10 @@ Rules:
 - Parallel agents never share a file.
 - An agent's report is a claim. The main session reads the diff and checks the verify commands before saying done.
 - Risky changes (auth, money, migrations, public API, concurrency) get an independent `tj-reviewer` pass.
+
+Why these effort levels: planning and review are where deeper reasoning catches mistakes, and they run rarely, so they get `high`. The implementer works from a finished plan, so `medium` gets the same result for fewer tokens. The builder's work is fully specified, so `low` is enough.
+
+Precedence, highest first: the `CLAUDE_CODE_EFFORT_LEVEL` environment variable, then an effort passed for one delegation, then the agent's `effort:` field, then your session level. Your session level (`/effort`) only applies to agents on the same model as the main session, so tjforge pins each agent's level instead.
 
 The full rules are in [references/routing.md](references/routing.md).
 
@@ -281,14 +285,15 @@ templates/
 
 ## Customising
 
-- **Models.** The agents pin exact model IDs (`claude-fable-5-2`, `claude-opus-5-5`, `claude-sonnet-5-5`) in `templates/agents/*.md`. Change the `model:` line when newer models ship, then re-run `scripts/install.py` in each project to sync them (`/tjforge check` shows which are out of date).
+- **Models and effort.** The agents pin exact model IDs (`claude-fable-5-2`, `claude-opus-5-5`, `claude-sonnet-5-5`) and an `effort:` level (`low`, `medium`, `high`, `xhigh` or `max`; available levels depend on the model) in `templates/agents/*.md`. Change those lines, then re-run `scripts/install.py` in each project to sync them (`/tjforge check` shows which are out of date).
 - **Rules.** Edit the files in `references/`. They are plain Markdown and are read fresh on every run.
 - **Per project.** Edit `docs/PROJECT-PROFILE.md` or `DESIGN.md` directly. Claude treats them as the contract, and they override tjforge's defaults.
 
 ## Notes
 
 - Claude Code picks up agent files without a restart, except in a project that had no `.claude/agents` folder before. There they load on the next session, and until then tjforge falls back to general-purpose agents with an explicit model.
-- `install.py` is safe to re-run. It only writes what is missing or out of date, and `--check` exits 1 when anything is missing.
+- `install.py` is safe to re-run. It only writes what is missing or out of date, and `--check` exits 1 when anything is missing or outdated.
+- After updating tjforge, re-run `install.py` in each project that uses it so its agents match the new templates. To find those projects: `find ~ -path '*/.claude/agents/tj-architect.md' -not -path '*/Library/*' 2>/dev/null`
 - Nothing is committed during init unless you ask.
 
 ## License

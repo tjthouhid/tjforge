@@ -8,9 +8,9 @@ is waste.
 
 | Tier | Model | Who | Use for |
 |---|---|---|---|
-| Think | Fable 5.2 | main session, or `tj-architect` | research, architecture, planning, unknown-cause debugging, ambiguous requirements, trade-off decisions, review of high-risk changes |
-| Build | Opus 5.5 | `tj-implementer`, `tj-reviewer` | multi-file features, non-trivial logic, bug fixes with a known cause, refactors, migrations, auth/payments/data code, code review |
-| Fill | Sonnet 5.5 | `tj-builder`, `Explore` | fully specified mechanical work: boilerplate, CRUD that copies an existing pattern, simple tests, docs, renames, config, dependency bumps, lint fixes, codebase search |
+| Think | Fable 5.2 (`tj-architect` at effort high) | main session, or `tj-architect` | research, architecture, planning, unknown-cause debugging, ambiguous requirements, trade-off decisions, review of high-risk changes |
+| Build | Opus 5.5 (implementer medium, reviewer high) | `tj-implementer`, `tj-reviewer` | multi-file features, non-trivial logic, bug fixes with a known cause, refactors, migrations, auth/payments/data code, code review |
+| Fill | Sonnet 5.5 (`tj-builder` at effort low) | `tj-builder`, `Explore` | fully specified mechanical work: boilerplate, CRUD that copies an existing pattern, simple tests, docs, renames, config, dependency bumps, lint fixes, codebase search |
 | Inline | current | main session | one file, about 20 lines or fewer, obvious change. No delegation |
 
 ## Choosing
@@ -25,6 +25,10 @@ A task is "big" when it touches more than 3 files, adds a new module or data
 model, changes a public interface, or has an unknown root cause. Big tasks get a
 plan from the Think tier before any code is written. Keep the plan in the
 conversation unless the user asks for a file.
+
+Effort is pinned per agent. Do not pass a higher effort per delegation unless
+the user asks; escalate to the next tier instead. The main session's effort is
+the user's choice: suggest high for big planning sessions, medium otherwise.
 
 ## Escalation
 

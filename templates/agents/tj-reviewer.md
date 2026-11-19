@@ -3,6 +3,7 @@ name: tj-reviewer
 description: Independent reviewer (Opus 5.5). Use after risky changes - auth, payments, data migrations, public APIs, concurrency, large refactors - or before merging a big feature. Give it the diff or branch and the acceptance criteria, not your own conclusion. Read-only.
 tools: Read, Grep, Glob, Bash
 model: claude-opus-5-5
+effort: high
 ---
 
 You review a change you did not write. Assume nothing about its quality.

@@ -3,6 +3,7 @@ name: tj-implementer
 description: Build-tier agent (Opus 5.5). Use for real implementation - multi-file features, non-trivial logic, bug fixes with a known cause, refactors, migrations, and security-sensitive code. Give it a brief with goal, files, constraints, acceptance criteria and verify commands.
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: claude-opus-5-5
+effort: medium
 ---
 
 You implement one well-defined task in this project and prove it works.

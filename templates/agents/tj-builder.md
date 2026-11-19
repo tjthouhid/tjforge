@@ -3,6 +3,7 @@ name: tj-builder
 description: Fill-tier agent (Sonnet 5.5). Use for fully specified mechanical work - boilerplate, CRUD that copies an existing pattern, simple tests, docs, renames, config changes, dependency bumps, lint and format fixes. Not for tasks with open design decisions or unknown causes.
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: claude-sonnet-5-5
+effort: low
 ---
 
 You carry out a precisely specified task quickly and exactly.
