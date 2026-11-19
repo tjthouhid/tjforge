@@ -1,0 +1,801 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tjforge · Claude Code skill</title>
+<meta name="description" content="A Claude Code skill that writes your project's engineering contract once, routes work across Fable, Opus and Sonnet, and keeps AI attribution out of your git history.">
+<meta property="og:title" content="tjforge · Claude Code skill">
+<meta property="og:description" content="Decide how a project is built once. Every Claude Code session follows it.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tjthouhid.github.io/tjforge/">
+<meta name="theme-color" content="#F1ECE2">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2314213D'/%3E%3Cpath d='M7 12h18l-3 5H10z' fill='%23E4572E'/%3E%3Crect x='14' y='17' width='4' height='6' fill='%23F1ECE2'/%3E%3Crect x='9' y='23' width='14' height='3' fill='%23F1ECE2'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #F1ECE2;
+  --paper-2: #E7E0D2;
+  --ink: #14213D;
+  --ink-soft: #3D4A66;
+  --muted: #6B7385;
+  --line: #C9C1B1;
+  --grid: rgba(20, 33, 61, 0.06);
+  --signal: #E4572E;
+  --signal-ink: #B83E1A;
+  --ok: #2F7D5B;
+  --fable: #6A4C93;
+  --opus: #14213D;
+  --sonnet: #2F7D5B;
+  --code-bg: #14213D;
+  --code-fg: #E9E4D8;
+  --code-dim: #8A94AB;
+  --radius: 4px;
+  --ease: cubic-bezier(.2, .7, .2, 1);
+  --display: "Instrument Serif", Georgia, serif;
+  --body: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0E1526; --paper-2: #151F36; --ink: #ECE6D8; --ink-soft: #B9BFCC;
+    --muted: #8790A3; --line: #2A3550; --grid: rgba(236, 230, 216, 0.05);
+    --signal: #F06A42; --signal-ink: #F28A69; --ok: #56B08A; --fable: #A88BD4;
+    --opus: #ECE6D8; --sonnet: #56B08A; --code-bg: #070C18; --code-fg: #E9E4D8;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0E1526; --paper-2: #151F36; --ink: #ECE6D8; --ink-soft: #B9BFCC;
+  --muted: #8790A3; --line: #2A3550; --grid: rgba(236, 230, 216, 0.05);
+  --signal: #F06A42; --signal-ink: #F28A69; --ok: #56B08A; --fable: #A88BD4;
+  --opus: #ECE6D8; --sonnet: #56B08A; --code-bg: #070C18; --code-fg: #E9E4D8;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body {
+  margin: 0;
+  background-color: var(--paper);
+  background-image:
+    linear-gradient(var(--grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 32px 32px;
+  color: var(--ink);
+  font: 400 17px/1.55 var(--body);
+  overflow-x: clip;
+}
+a { color: inherit; }
+::selection { background: var(--signal); color: var(--paper); }
+:focus-visible { outline: 2px solid var(--signal); outline-offset: 3px; border-radius: 2px; }
+.wrap { width: min(1200px, 100% - 32px); margin-inline: auto; }
+.hero-grid > *, .files > *, .router > *, .attr > *, .fit > *, .install > *, .sec-head > * { min-width: 0; }
+.mono { font-family: var(--mono); }
+.tag {
+  font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase;
+  color: var(--muted);
+}
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------- header ---------- */
+header.top {
+  position: sticky; top: 0; z-index: 20;
+  background: color-mix(in srgb, var(--paper) 88%, transparent);
+  backdrop-filter: saturate(1.2) blur(6px);
+  border-bottom: 1px solid var(--line);
+}
+header.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 16px; }
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.brand svg { width: 28px; height: 28px; flex: none; }
+.brand b { font: 600 18px/1 var(--mono); letter-spacing: -.02em; }
+nav.links { display: flex; align-items: center; gap: 22px; }
+nav.links a.nl { text-decoration: none; font-size: 14px; color: var(--ink-soft); }
+nav.links a.nl:hover { color: var(--ink); text-decoration: underline; text-underline-offset: 4px; }
+@media (max-width: 760px) { nav.links a.nl { display: none; } }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 10px;
+  font: 500 14px/1 var(--body); text-decoration: none; cursor: pointer;
+  border: 1px solid var(--ink); border-radius: var(--radius);
+  padding: 11px 14px; background: transparent; color: var(--ink);
+  transition: transform .2s var(--ease), background-color .2s, color .2s;
+}
+.btn:hover { transform: translateY(-2px); }
+.btn:active { transform: translateY(0); }
+.btn.solid { background: var(--ink); color: var(--paper); }
+.btn.solid:hover { background: var(--signal); border-color: var(--signal); color: #fff; }
+.btn svg { width: 16px; height: 16px; flex: none; }
+.btn .count {
+  font: 500 12px/1 var(--mono); padding: 4px 6px; margin: -4px -6px -4px 2px;
+  border-left: 1px solid currentColor; opacity: .85;
+}
+
+/* ---------- hero ---------- */
+.hero { padding: 72px 0 56px; border-bottom: 1px solid var(--line); }
+.hero-grid { display: grid; grid-template-columns: 7fr 5fr; gap: 56px; align-items: end; }
+.hero h1 {
+  font: 400 clamp(56px, 10.5vw, 156px)/.86 var(--display);
+  letter-spacing: -.025em; margin: 18px 0 0;
+}
+.hero h1 em { font-style: italic; color: var(--signal); }
+.hero h1 .line { display: block; overflow: hidden; }
+.hero h1 .line > span { display: inline-block; transform: translateY(105%); animation: rise .9s var(--ease) forwards; }
+.hero h1 .line:nth-child(2) > span { animation-delay: .12s; }
+.hero h1 .line:nth-child(3) > span { animation-delay: .24s; }
+@keyframes rise { to { transform: none; } }
+.lede { max-width: 34ch; font-size: 20px; line-height: 1.45; color: var(--ink-soft); margin: 28px 0 0; }
+.hero-cta { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 28px; }
+.hero-meta span { font: 400 12px/1.4 var(--mono); color: var(--muted); }
+.hero-meta span::before { content: "— "; color: var(--signal); }
+
+/* terminal */
+.term {
+  background: var(--code-bg); color: var(--code-fg);
+  border-radius: 6px; overflow: hidden;
+  box-shadow: 12px 12px 0 var(--signal);
+  font: 400 13px/1.65 var(--mono);
+}
+.term-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid rgba(255,255,255,.08); }
+.term-bar i { display: inline-block; width: 9px; height: 9px; border-radius: 50%; background: rgba(255,255,255,.18); margin-right: 6px; }
+.term-bar span { font-size: 11px; color: var(--code-dim); }
+.term pre { margin: 0; padding: 16px 18px 20px; min-height: 340px; white-space: pre-wrap; word-break: break-word; }
+.term .p { color: var(--signal); }
+.term .d { color: var(--code-dim); }
+.term .w { color: #8FD3B0; }
+.term .k { color: #F2C66D; }
+.caret { display: inline-block; width: .6em; height: 1.1em; vertical-align: -.2em; background: var(--signal); animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+@media (max-width: 900px) {
+  .hero { padding-top: 48px; }
+  .hero-grid { grid-template-columns: 1fr; gap: 40px; }
+  .term { box-shadow: 8px 8px 0 var(--signal); }
+  .term pre { min-height: 300px; font-size: 12px; }
+}
+
+/* ---------- sections ---------- */
+section.block { padding: 96px 0; border-bottom: 1px solid var(--line); }
+section[id] { scroll-margin-top: 64px; }
+.sec-head { display: grid; grid-template-columns: 180px 1fr; gap: 24px; margin-bottom: 56px; }
+.sec-head .num { font: 400 13px/1 var(--mono); color: var(--signal); padding-top: 14px; }
+.sec-head h2 { font: 400 clamp(40px, 6vw, 80px)/.95 var(--display); letter-spacing: -.02em; margin: 0; max-width: 16ch; }
+.sec-head h2 em { font-style: italic; }
+.sec-head p { grid-column: 2; max-width: 56ch; color: var(--ink-soft); margin: 20px 0 0; font-size: 18px; }
+@media (max-width: 760px) {
+  section.block { padding: 64px 0; }
+  .sec-head { grid-template-columns: 1fr; gap: 10px; margin-bottom: 36px; }
+  .sec-head p { grid-column: 1; }
+}
+
+/* steps: drawing callouts */
+.steps { display: grid; grid-template-columns: repeat(12, 1fr); gap: 0; border-top: 1px solid var(--ink); }
+.step { padding: 28px 24px 32px 0; border-bottom: 1px solid var(--line); position: relative; }
+.step:nth-child(1) { grid-column: 1 / span 5; }
+.step:nth-child(2) { grid-column: 7 / span 6; }
+.step:nth-child(3) { grid-column: 1 / span 6; }
+.step:nth-child(4) { grid-column: 8 / span 5; }
+.step .n { font: 400 64px/1 var(--display); font-style: italic; color: var(--signal); }
+.step h3 { font: 600 20px/1.25 var(--body); margin: 14px 0 8px; }
+.step p { margin: 0; color: var(--ink-soft); }
+.step code, .prose code, td code { font: 400 .86em var(--mono); background: var(--paper-2); padding: 1px 5px; border-radius: 3px; }
+@media (max-width: 760px) { .step:nth-child(n) { grid-column: 1 / -1; } }
+
+/* files tree */
+.files { display: grid; grid-template-columns: 5fr 7fr; gap: 48px; margin-top: 72px; align-items: start; }
+.tree { font: 400 13px/1.9 var(--mono); background: var(--paper-2); border: 1px solid var(--line); border-radius: 6px; padding: 18px 20px; overflow-x: auto; white-space: pre; }
+.tree .c { color: var(--muted); }
+.tree .h { color: var(--signal-ink); }
+.files .prose h3 { font: 400 36px/1.05 var(--display); margin: 0 0 16px; }
+.files .prose p { color: var(--ink-soft); margin: 0 0 14px; }
+@media (max-width: 900px) { .files { grid-template-columns: 1fr; gap: 28px; } }
+
+/* routing demo */
+.router { display: grid; grid-template-columns: 4fr 8fr; gap: 48px; align-items: start; }
+.reqs { display: flex; flex-direction: column; gap: 8px; }
+.req {
+  text-align: left; font: 500 15px/1.35 var(--body); color: var(--ink);
+  background: transparent; border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 14px 16px; cursor: pointer; transition: border-color .2s, background-color .2s, transform .2s var(--ease);
+}
+.req:hover { border-color: var(--ink); transform: translateX(4px); }
+.req[aria-pressed="true"] { border-color: var(--ink); background: var(--ink); color: var(--paper); }
+.req small { display: block; font: 400 11px/1.4 var(--mono); color: var(--muted); margin-top: 4px; letter-spacing: .04em; }
+.req[aria-pressed="true"] small { color: color-mix(in srgb, var(--paper) 70%, transparent); }
+
+.board { border: 1px solid var(--ink); border-radius: 6px; padding: 24px; background: var(--paper); }
+.stations { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.station {
+  position: relative; border: 1px dashed var(--line); border-radius: var(--radius);
+  padding: 14px 12px 16px; min-height: 112px; opacity: .45;
+  transition: opacity .35s, border-color .35s, transform .35s var(--ease), background-color .35s;
+}
+.station .who { font: 500 11px/1.3 var(--mono); letter-spacing: .06em; text-transform: uppercase; }
+.station .what { font: 400 26px/1 var(--display); margin-top: 10px; }
+.station .eff { font: 400 11px/1.3 var(--mono); color: var(--muted); margin-top: 8px; }
+.station .order {
+  position: absolute; top: -11px; right: 10px; width: 22px; height: 22px; border-radius: 50%;
+  display: grid; place-items: center; font: 500 11px/1 var(--mono);
+  background: var(--signal); color: #fff; transform: scale(0); transition: transform .3s var(--ease);
+}
+.station.on { opacity: 1; border-style: solid; border-color: var(--ink); transform: translateY(-3px); background: var(--paper-2); }
+.station.on .order { transform: scale(1); }
+.station[data-s="think"] .who { color: var(--fable); }
+.station[data-s="build"] .who, .station[data-s="review"] .who { color: var(--opus); }
+.station[data-s="fill"] .who { color: var(--sonnet); }
+.station[data-s="inline"] .who, .station[data-s="check"] .who, .station[data-s="report"] .who { color: var(--muted); }
+.trace { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 16px; font: 400 14px/1.6 var(--mono); min-height: 5.2em; }
+.trace .why { color: var(--ink-soft); font-family: var(--body); font-size: 15px; margin-top: 8px; }
+.tiers { margin-top: 40px; width: 100%; border-collapse: collapse; font-size: 15px; }
+.tiers th, .tiers td { text-align: left; padding: 12px 12px 12px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tiers th { font: 500 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.tiers td:first-child { font-weight: 600; white-space: nowrap; }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; }
+.table-scroll { overflow-x: auto; }
+@media (max-width: 900px) {
+  .router { grid-template-columns: 1fr; gap: 28px; }
+  .stations { grid-template-columns: repeat(2, 1fr); }
+  .tiers { font-size: 14px; min-width: 560px; }
+}
+
+/* parallel: the layout-breaking moment */
+.fan { position: relative; margin-top: 8px; }
+.fan svg { width: 100%; height: auto; display: block; overflow: visible; }
+.fan .lead-text { font: 400 clamp(32px, 4.4vw, 56px)/1 var(--display); }
+.fan text { fill: var(--ink); }
+.fan .lbl { font: 500 13px var(--mono); }
+.fan .sub { font: 400 12px var(--mono); fill: var(--muted); }
+.fan .wire { fill: none; stroke: var(--ink); stroke-width: 1.5; stroke-dasharray: 6 6; }
+.fan .pulse { fill: var(--signal); }
+.fan .box { fill: var(--paper); stroke: var(--ink); stroke-width: 1.5; }
+.fan .box.hot { stroke: var(--signal); stroke-width: 2; }
+.fan-notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; margin-top: 48px; }
+.fan-notes div { border-top: 2px solid var(--ink); padding-top: 14px; }
+.fan-notes b { display: block; font: 600 16px/1.3 var(--body); margin-bottom: 6px; }
+.fan-notes p { margin: 0; color: var(--ink-soft); font-size: 15px; }
+.fan-mobile { display: none; }
+@media (max-width: 760px) {
+  .fan svg { display: none; }
+  .fan-mobile { display: block; font: 400 13px/1.9 var(--mono); border: 1px solid var(--ink); border-radius: 6px; padding: 16px; white-space: pre; overflow-x: auto; }
+  .fan-notes { grid-template-columns: 1fr; gap: 20px; }
+}
+
+/* attribution */
+.attr { display: grid; grid-template-columns: 6fr 6fr; gap: 48px; align-items: start; }
+.diff { background: var(--code-bg); color: var(--code-fg); border-radius: 6px; font: 400 13.5px/1.75 var(--mono); padding: 18px 0; overflow-x: auto; }
+.diff div { padding: 0 20px; white-space: pre; }
+@media (max-width: 760px) { .diff div { white-space: pre-wrap; word-break: break-all; } }
+.diff .del { background: rgba(228, 87, 46, .16); color: #F4A68D; text-decoration: line-through; text-decoration-color: rgba(244,166,141,.6); }
+.diff .dim { color: var(--code-dim); }
+.layers { display: flex; flex-direction: column; gap: 22px; }
+.layer { display: grid; grid-template-columns: 44px 1fr; gap: 14px; }
+.layer .n { font: 400 40px/1 var(--display); font-style: italic; color: var(--signal); }
+.layer b { display: block; font: 600 17px/1.3 var(--body); margin-bottom: 4px; }
+.layer p { margin: 0; color: var(--ink-soft); font-size: 15px; }
+.note { font-size: 14px; color: var(--muted); border-left: 2px solid var(--signal); padding-left: 12px; margin-top: 8px; }
+@media (max-width: 900px) { .attr { grid-template-columns: 1fr; gap: 32px; } }
+
+/* fit */
+.fit { display: grid; grid-template-columns: 7fr 5fr; gap: 48px; }
+.fit h3 { font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+.fit ul { list-style: none; margin: 0; padding: 0; }
+.fit li { display: grid; grid-template-columns: 22px 1fr; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.fit li b { font-weight: 600; }
+.fit li span { color: var(--ink-soft); }
+.fit li::before { content: "+"; font: 500 15px/1.5 var(--mono); color: var(--ok); }
+.fit .no li::before { content: "−"; color: var(--signal); }
+@media (max-width: 900px) { .fit { grid-template-columns: 1fr; } }
+
+/* install */
+.install { display: grid; grid-template-columns: 7fr 5fr; gap: 48px; align-items: start; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--ink); }
+.tab { font: 500 13px/1 var(--mono); background: none; border: 1px solid transparent; border-bottom: none; padding: 12px 14px; cursor: pointer; color: var(--muted); border-radius: 4px 4px 0 0; }
+.tab:hover { color: var(--ink); }
+.tab[aria-selected="true"] { color: var(--paper); background: var(--ink); }
+.panel { padding: 22px 0 0; }
+.panel[hidden] { display: none; }
+.cmd { display: flex; align-items: stretch; background: var(--code-bg); color: var(--code-fg); border-radius: 6px; overflow: hidden; }
+.cmd code { flex: 1; font: 400 14px/1.5 var(--mono); padding: 16px 18px; overflow-x: auto; white-space: nowrap; }
+.cmd code::before { content: "$ "; color: var(--signal); }
+.copy { flex: none; font: 500 12px/1 var(--mono); background: transparent; color: var(--code-fg); border: 0; border-left: 1px solid rgba(255,255,255,.12); padding: 0 16px; cursor: pointer; min-width: 84px; }
+.copy:hover { background: rgba(255,255,255,.06); }
+.copy.done { color: #8FD3B0; }
+.panel p { color: var(--ink-soft); margin: 14px 0 0; font-size: 15px; }
+.panel .cmd + .cmd { margin-top: 10px; }
+.quick ol { margin: 0; padding: 0; list-style: none; counter-reset: q; }
+.quick li { counter-increment: q; display: grid; grid-template-columns: 36px 1fr; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.quick li::before { content: counter(q, decimal-leading-zero); font: 500 13px/1.6 var(--mono); color: var(--signal); }
+.quick li code { font: 400 .86em var(--mono); background: var(--paper-2); padding: 1px 5px; border-radius: 3px; }
+@media (max-width: 900px) { .install { grid-template-columns: 1fr; } }
+
+/* star band */
+.star-band { padding: 120px 0; text-align: left; border-bottom: 1px solid var(--line); }
+.star-band h2 { font: 400 clamp(48px, 9vw, 132px)/.9 var(--display); letter-spacing: -.025em; margin: 0; }
+.star-band h2 em { color: var(--signal); }
+.star-band p { max-width: 48ch; color: var(--ink-soft); font-size: 18px; margin: 24px 0 32px; }
+.star-band .row { display: flex; flex-wrap: wrap; gap: 12px; }
+.star-icon { transition: transform .5s var(--ease); }
+.btn:hover .star-icon { transform: rotate(72deg) scale(1.15); }
+
+footer { padding: 32px 0 48px; }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; font: 400 12px/1.6 var(--mono); color: var(--muted); }
+footer a { color: var(--ink-soft); }
+
+/* reveal */
+.reveal { opacity: 0; transform: translateY(24px); transition: opacity .8s var(--ease), transform .8s var(--ease); }
+.reveal.in { opacity: 1; transform: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  .hero h1 .line > span { transform: none; }
+  .reveal { opacity: 1; transform: none; }
+  .caret { animation: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="tjforge home">
+      <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="6" fill="var(--ink)"/><path d="M7 12h18l-3 5H10z" fill="var(--signal)"/><rect x="14" y="17" width="4" height="6" fill="var(--paper)"/><rect x="9" y="23" width="14" height="3" fill="var(--paper)"/></svg>
+      <b>tjforge</b>
+    </a>
+    <nav class="links" aria-label="Sections">
+      <a class="nl" href="#how">How it works</a>
+      <a class="nl" href="#routing">Routing</a>
+      <a class="nl" href="#attribution">Attribution</a>
+      <a class="nl" href="#install">Install</a>
+      <a class="btn star-btn" href="https://github.com/tjthouhid/tjforge" target="_blank" rel="noopener">
+        <svg class="star-icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></svg>
+        Star <span class="count" data-stars hidden></span>
+      </a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="tag">A skill for Claude Code · MIT</span>
+      <h1 aria-label="Decide once. Build the same way.">
+        <span class="line"><span>Decide</span></span>
+        <span class="line"><span><em>once.</em> Build</span></span>
+        <span class="line"><span>the same way.</span></span>
+      </h1>
+      <p class="lede">tjforge writes your project's engineering contract on day one, then every Claude Code session follows it: same stack rules, same design brief, the right model for each job.</p>
+      <div class="hero-cta">
+        <a class="btn solid" href="#install">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14ZM7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.969a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.78a.749.749 0 1 1 1.06-1.06Z"/></svg>
+          Get the skill
+        </a>
+        <a class="btn star-btn" href="https://github.com/tjthouhid/tjforge" target="_blank" rel="noopener">
+          <svg class="star-icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></svg>
+          Star on GitHub <span class="count" data-stars hidden></span>
+        </a>
+      </div>
+      <div class="hero-meta">
+        <span>Fable 5.2 plans</span><span>Opus 5.5 builds</span><span>Sonnet 5.5 fills in</span><span>no Co-Authored-By</span>
+      </div>
+    </div>
+
+    <div class="term" role="img" aria-label="Terminal showing tjforge detecting a Next.js project and installing its agents, settings and commit hook">
+      <div class="term-bar"><div><i></i><i></i><i></i></div><span>~/projects/booking-app</span></div>
+      <pre id="term"></pre>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="how">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="num">01 / How it works</span>
+      <div>
+        <h2>One command. <em>Then it just holds.</em></h2>
+        <p>Run <code class="mono">/tjforge</code> in any repository. It asks almost nothing in an existing codebase, because detection already answered it.</p>
+      </div>
+    </div>
+
+    <div class="steps">
+      <div class="step reveal"><div class="n">i.</div><h3>Detect</h3><p>Reads the manifest, lint and type config, tests, UI signals and git history. Your existing conventions win over any default.</p></div>
+      <div class="step reveal"><div class="n">ii.</div><h3>Write the contract</h3><p><code>docs/PROJECT-PROFILE.md</code>: system design, coding standards, the exact verify commands, git rules. Every line is tagged <i>detected</i>, <i>user</i> or <i>default</i>.</p></div>
+      <div class="step reveal"><div class="n">iii.</div><h3>Pick a design direction</h3><p>UI projects get three genuinely different directions: palette, type, layout and a motion signature. You choose; it lands in <code>DESIGN.md</code>. No centered-hero-plus-three-cards.</p></div>
+      <div class="step reveal"><div class="n">iv.</div><h3>Install the enforcement</h3><p>Model-pinned subagents, attribution off, a commit hook, and a short block in <code>CLAUDE.md</code>, so plain sessions follow the contract too. Re-running syncs; your edits are never overwritten.</p></div>
+    </div>
+
+    <div class="files">
+      <div class="tree reveal" aria-label="Files tjforge adds to a project">your-project/
+├── CLAUDE.md                <span class="c"># tjforge block</span>
+├── DESIGN.md                <span class="c"># design brief</span>
+├── docs/
+│   └── PROJECT-PROFILE.md   <span class="c"># the contract</span>
+├── .claude/
+│   ├── settings.json        <span class="c"># attribution off</span>
+│   ├── tjforge.lock.json    <span class="c"># protects your edits</span>
+│   └── agents/
+│       ├── <span class="h">tj-architect.md</span>  <span class="c"># Fable · high</span>
+│       ├── <span class="h">tj-implementer.md</span><span class="c"># Opus · medium</span>
+│       ├── <span class="h">tj-reviewer.md</span>   <span class="c"># Opus · high</span>
+│       └── <span class="h">tj-builder.md</span>    <span class="c"># Sonnet · low</span>
+└── .githooks/
+    └── commit-msg           <span class="c"># strips trailers</span></div>
+      <div class="prose reveal">
+        <h3>Plain files you can read, edit and commit.</h3>
+        <p>Nothing hidden, no service to sign up for. The contract is Markdown, the agents are Markdown, the installer is one Python script with a <code>--check</code> mode.</p>
+        <p>Commit them and the rules travel with the repository. Change tjforge once and every project picks up the update the next time you call <code>/tjforge</code> there.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="routing">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="num">02 / Model routing</span>
+      <div>
+        <h2>The cheapest model that gets it <em>right the first time.</em></h2>
+        <p>Pick a request and watch where it goes. A wrong cheap attempt costs more than one correct expensive one; an expensive model on mechanical work is waste.</p>
+      </div>
+    </div>
+
+    <div class="router">
+      <div class="reqs" role="group" aria-label="Example requests">
+        <button class="req" data-route="typo">"Fix the typo in the footer"<small>one file · obvious</small></button>
+        <button class="req" data-route="health">"Add /health like the existing /status"<small>copies a pattern</small></button>
+        <button class="req" data-route="stripe" aria-pressed="true">"Add Stripe checkout with webhooks"<small>money · multi-file</small></button>
+        <button class="req" data-route="bug">"Checkout fails for some users, no idea why"<small>unknown cause</small></button>
+        <button class="req" data-route="landing">"Build the new landing page"<small>expressive UI</small></button>
+      </div>
+
+      <div class="board" aria-live="polite">
+        <div class="stations">
+          <div class="station" data-s="inline"><span class="order"></span><div class="who">Main session</div><div class="what">Inline</div><div class="eff">no agent</div></div>
+          <div class="station" data-s="think"><span class="order"></span><div class="who">Fable 5.2</div><div class="what">Think</div><div class="eff">tj-architect · high</div></div>
+          <div class="station" data-s="build"><span class="order"></span><div class="who">Opus 5.5</div><div class="what">Build</div><div class="eff">tj-implementer · medium</div></div>
+          <div class="station" data-s="fill"><span class="order"></span><div class="who">Sonnet 5.5</div><div class="what">Fill</div><div class="eff">tj-builder · low</div></div>
+          <div class="station" data-s="check"><span class="order"></span><div class="who">Lead</div><div class="what">Check</div><div class="eff">reruns tests once</div></div>
+          <div class="station" data-s="review"><span class="order"></span><div class="who">Opus 5.5</div><div class="what">Review</div><div class="eff">tj-reviewer · high</div></div>
+          <div class="station" data-s="report"><span class="order"></span><div class="who">You</div><div class="what">Report</div><div class="eff">what ran, what didn't</div></div>
+        </div>
+        <div class="trace" id="trace"></div>
+      </div>
+    </div>
+
+    <div class="table-scroll reveal">
+      <table class="tiers">
+        <thead><tr><th>Tier</th><th>Model · effort</th><th>Takes</th></tr></thead>
+        <tbody>
+          <tr><td><span class="dot" style="background:var(--fable)"></span>Think</td><td class="mono">Fable 5.2 · high</td><td>Research, architecture, plans for big tasks, unknown-cause bugs, trade-offs</td></tr>
+          <tr><td><span class="dot" style="background:var(--opus)"></span>Build</td><td class="mono">Opus 5.5 · medium</td><td>Multi-file features, schema, money, auth, concurrency, new expressive UI</td></tr>
+          <tr><td><span class="dot" style="background:var(--opus)"></span>Review</td><td class="mono">Opus 5.5 · high</td><td>Independent pass on risky diffs, given the diff, not the conclusion</td></tr>
+          <tr><td><span class="dot" style="background:var(--sonnet)"></span>Fill</td><td class="mono">Sonnet 5.5 · low</td><td>Fully specified boilerplate, screens from an existing pattern, tests, docs, renames, config</td></tr>
+          <tr><td><span class="dot" style="background:var(--muted)"></span>Inline</td><td class="mono">current session</td><td>One file, about 20 lines, obvious. Delegating would cost more than doing it</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="parallel">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="num">03 / In parallel</span>
+      <div>
+        <h2>Several agents. <em>One lead.</em></h2>
+        <p>An agent file is a template, not a single worker. Independent tasks get their own copies at the same time, each on the model pinned in its file. Every copy reports back to the main session, which checks the work.</p>
+      </div>
+    </div>
+
+    <div class="fan reveal">
+      <svg viewBox="0 0 1200 420" role="img" aria-label="The main session on Fable 5.2 sends three tasks in parallel: two tj-implementer copies on Opus 5.5 and one tj-builder on Sonnet 5.5. All report back, and the risky one goes to tj-reviewer.">
+        <text class="lead-text" x="0" y="58">Fable plans.</text>
+        <text class="sub" x="0" y="88">main session</text><text class="sub" x="0" y="108">splits work, no shared files</text>
+        <path id="w1" class="wire" d="M330 70 C 440 70, 450 50, 560 50"/>
+        <path id="w2" class="wire" d="M330 70 C 440 70, 450 190, 560 190"/>
+        <path id="w3" class="wire" d="M330 70 C 440 70, 450 330, 560 330"/>
+        <g><rect class="box hot" x="560" y="10" width="300" height="80" rx="4"/><text class="lbl" x="580" y="44">tj-implementer #1</text><text class="sub" x="580" y="68">Opus 5.5 · medium · payments API</text></g>
+        <g><rect class="box" x="560" y="150" width="300" height="80" rx="4"/><text class="lbl" x="580" y="184">tj-implementer #2</text><text class="sub" x="580" y="208">Opus 5.5 · medium · email notices</text></g>
+        <g><rect class="box" x="560" y="290" width="300" height="80" rx="4"/><text class="lbl" x="580" y="324">tj-builder</text><text class="sub" x="580" y="348">Sonnet 5.5 · low · settings screen</text></g>
+        <path id="r1" class="wire" d="M860 50 C 960 50, 960 190, 1010 190"/>
+        <path id="r2" class="wire" d="M860 190 L 1010 190"/>
+        <path id="r3" class="wire" d="M860 330 C 960 330, 960 190, 1010 190"/>
+        <g><rect class="box" x="1010" y="150" width="190" height="80" rx="4"/><text class="lbl" x="1028" y="184">Lead checks</text><text class="sub" x="1028" y="208">reviewer on #1</text></g>
+        <circle class="pulse" r="6"><animateMotion dur="2.6s" repeatCount="indefinite"><mpath href="#w1"/></animateMotion></circle>
+        <circle class="pulse" r="6"><animateMotion dur="3.1s" repeatCount="indefinite"><mpath href="#w2"/></animateMotion></circle>
+        <circle class="pulse" r="6"><animateMotion dur="3.6s" repeatCount="indefinite"><mpath href="#w3"/></animateMotion></circle>
+      </svg>
+      <div class="fan-mobile" aria-hidden="true">Fable plans (main session)
+ ├─ tj-implementer #1  Opus · medium
+ │    payments API
+ ├─ tj-implementer #2  Opus · medium
+ │    email notices
+ └─ tj-builder         Sonnet · low
+      settings screen
+        ↓ all report back
+ Lead checks → tj-reviewer on #1</div>
+    </div>
+
+    <div class="fan-notes">
+      <div class="reveal"><b>Parallel when independent</b><p>Different files, no result needed from each other: separate copies at the same time.</p></div>
+      <div class="reveal"><b>Batched when small</b><p>Small related changes go to one agent with one verification run. Shared context loads once.</p></div>
+      <div class="reveal"><b>In order when dependent</b><p>The API before the screen that calls it. Two agents never edit the same file.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="attribution">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="num">04 / Git history</span>
+      <div>
+        <h2>Your name on your commits. <em>Only yours.</em></h2>
+        <p>Two layers, so it holds whichever tool writes the commit.</p>
+      </div>
+    </div>
+    <div class="attr">
+      <div class="diff reveal" role="img" aria-label="A commit message where the Generated with Claude Code footer and the Co-Authored-By trailer are struck out by the hook">
+        <div>feat: add checkout page</div>
+        <div> </div>
+        <div>Adds Stripe checkout with webhook handling.</div>
+        <div class="del">&#8203;</div>
+        <div class="del">🤖 Generated with [Claude Code](https://claude.com/claude-code)</div>
+        <div class="del">&#8203;</div>
+        <div class="del">Co-Authored-By: Claude &lt;noreply@anthropic.com&gt;</div>
+        <div class="del">Made-with: Cursor</div>
+      </div>
+      <div class="layers">
+        <div class="layer reveal"><span class="n">1</span><div><b>Off at the source</b><p><code class="mono">.claude/settings.json</code> sets <code class="mono">attribution</code> to empty, so Claude Code never adds the trailer or the pull-request footer.</p></div></div>
+        <div class="layer reveal"><span class="n">2</span><div><b>Stripped by a hook</b><p><code class="mono">.githooks/commit-msg</code> removes <code class="mono">Co-authored-by</code>, "Generated with Claude Code / Cursor" and <code class="mono">Made-with: Cursor</code> before the commit is written. Chains into husky or lefthook instead of replacing them.</p></div></div>
+        <p class="note">Local commits only. Commits made in the cloud, in GitHub's web editor or with <code class="mono">--no-verify</code> skip local hooks.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="fit">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="num">05 / Fit</span>
+      <div><h2>Where it <em>earns its keep.</em></h2></div>
+    </div>
+    <div class="fit">
+      <div class="reveal">
+        <h3>Good fit</h3>
+        <ul>
+          <li><span><b>New projects with Claude.</b> <span>Stack, architecture and design decided before the first file.</span></span></li>
+          <li><span><b>Inherited codebases.</b> <span>Conventions written down, so Claude stops "improving" them.</span></span></li>
+          <li><span><b>Landing pages and brand sites.</b> <span>A specific design direction instead of a template.</span></span></li>
+          <li><span><b>Product apps and dashboards.</b> <span>Tokens, consistent states, motion only as feedback.</span></span></li>
+          <li><span><b>Long or multi-session work.</b> <span>Decisions persist; you stop re-explaining.</span></span></li>
+          <li><span><b>Large features.</b> <span>Planned, built in parallel, risky parts reviewed.</span></span></li>
+        </ul>
+      </div>
+      <div class="reveal no">
+        <h3>Not worth it</h3>
+        <ul>
+          <li><span><b>One-off scripts.</b> <span>Just ask Claude.</span></span></li>
+          <li><span><b>Throwaway prototypes.</b> <span>Plain Claude Code is faster.</span></span></li>
+          <li><span><b>Repos where you can't commit <code>.claude/</code>.</b> <span>Keep rules in your personal CLAUDE.md.</span></span></li>
+          <li><span><b>Pairing with human co-authors.</b> <span>Edit the hook first; it strips every Co-authored-by line.</span></span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="block" id="install">
+  <div class="wrap">
+    <div class="sec-head reveal">
+      <span class="num">06 / Install</span>
+      <div>
+        <h2>Thirty seconds, <em>then every project.</em></h2>
+        <p>Needs Claude Code, git, bash and python3. macOS and Linux ship the last three.</p>
+      </div>
+    </div>
+
+    <div class="install">
+      <div class="reveal">
+        <div class="tabs" role="tablist" aria-label="Install method">
+          <button class="tab" role="tab" id="t-git" aria-controls="p-git" aria-selected="true">git clone</button>
+          <button class="tab" role="tab" id="t-zip" aria-controls="p-zip" aria-selected="false" tabindex="-1">download zip</button>
+          <button class="tab" role="tab" id="t-up" aria-controls="p-up" aria-selected="false" tabindex="-1">update</button>
+        </div>
+        <div class="panel" role="tabpanel" id="p-git" aria-labelledby="t-git">
+          <div class="cmd"><code>git clone https://github.com/tjthouhid/tjforge.git ~/.claude/skills/tjforge</code><button class="copy" type="button">Copy</button></div>
+          <p>Start a new Claude Code session. <code class="mono">/tjforge</code> is now available in every project.</p>
+        </div>
+        <div class="panel" role="tabpanel" id="p-zip" aria-labelledby="t-zip" hidden>
+          <a class="btn solid" href="https://github.com/tjthouhid/tjforge/archive/refs/heads/main.zip">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.75 14A1.75 1.75 0 0 1 1 12.25v-2.5a.75.75 0 0 1 1.5 0v2.5c0 .138.112.25.25.25h10.5a.25.25 0 0 0 .25-.25v-2.5a.75.75 0 0 1 1.5 0v2.5A1.75 1.75 0 0 1 13.25 14ZM7.25 7.689V2a.75.75 0 0 1 1.5 0v5.689l1.97-1.969a.749.749 0 1 1 1.06 1.06l-3.25 3.25a.749.749 0 0 1-1.06 0L4.22 6.78a.749.749 0 1 1 1.06-1.06Z"/></svg>
+            tjforge-main.zip
+          </a>
+          <p>Unzip, then move the folder into your skills directory under the name <code class="mono">tjforge</code>:</p>
+          <div class="cmd" style="margin-top:12px"><code>mkdir -p ~/.claude/skills &amp;&amp; mv ~/Downloads/tjforge-main ~/.claude/skills/tjforge</code><button class="copy" type="button">Copy</button></div>
+        </div>
+        <div class="panel" role="tabpanel" id="p-up" aria-labelledby="t-up" hidden>
+          <div class="cmd"><code>git -C ~/.claude/skills/tjforge pull</code><button class="copy" type="button">Copy</button></div>
+          <p>Each project syncs itself the next time you run <code class="mono">/tjforge</code> there, or straight away with <code class="mono">/tjforge sync</code>.</p>
+        </div>
+      </div>
+
+      <div class="quick reveal">
+        <span class="tag">Then, in a project</span>
+        <ol>
+          <li><span>Open it in Claude Code and pick <b>Fable 5.2</b>. High effort for big planning, medium for everyday work.</span></li>
+          <li><span>Run <code>/tjforge init</code>. Accept the summary, pick a design direction if it has a UI.</span></li>
+          <li><span>If the project had no <code>.claude/agents</code> folder, start a new session so the agents load.</span></li>
+          <li><span>Work normally. "Add a booking page." Fable plans and hands work to Opus and Sonnet itself.</span></li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="star-band">
+  <div class="wrap">
+    <h2 class="reveal">If it saves you<br>an afternoon, <em>star it.</em></h2>
+    <p class="reveal">Stars help other people find it. Issues and pull requests are welcome too: a better rule, a detector for your stack, a sharper agent brief.</p>
+    <div class="row reveal">
+      <a class="btn solid star-btn" href="https://github.com/tjthouhid/tjforge" target="_blank" rel="noopener">
+        <svg class="star-icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></svg>
+        Star tjforge <span class="count" data-stars hidden></span>
+      </a>
+      <a class="btn" href="https://github.com/tjthouhid/tjforge/issues" target="_blank" rel="noopener">Open an issue</a>
+      <a class="btn" href="https://github.com/tjthouhid/tjforge#readme" target="_blank" rel="noopener">Read the docs</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>tjforge · MIT · by <a href="https://github.com/tjthouhid" target="_blank" rel="noopener">@tjthouhid</a></span>
+    <span>An independent community skill for Claude Code. Not affiliated with Anthropic.</span>
+  </div>
+</footer>
+
+<script>
+(() => {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* GitHub star count */
+  fetch('https://api.github.com/repos/tjthouhid/tjforge')
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      if (!d || typeof d.stargazers_count !== 'number' || d.stargazers_count < 1) return;
+      const n = d.stargazers_count;
+      const txt = n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(n);
+      document.querySelectorAll('[data-stars]').forEach(el => { el.textContent = txt; el.hidden = false; });
+    })
+    .catch(() => {});
+
+  /* terminal */
+  const lines = [
+    ['p', '› '], ['', '/tjforge init\n'],
+    ['d', '  detect  next react typescript tailwindcss vitest\n'],
+    ['d', '  detect  ts strict: yes · has UI: likely\n'],
+    ['k', '  ? '], ['', 'Contract summary (12 lines) — accept?\n'],
+    ['k', '  ? '], ['', 'Design: A. Ember Cinema (recommended)\n'],
+    ['', '\n'],
+    ['w', '  wrote   '], ['', 'docs/PROJECT-PROFILE.md\n'],
+    ['w', '  wrote   '], ['', 'DESIGN.md\n'],
+    ['w', '  wrote   '], ['', '.claude/agents/tj-architect.md\n'],
+    ['w', '  wrote   '], ['', '.claude/agents/tj-implementer.md\n'],
+    ['w', '  wrote   '], ['', '.claude/agents/tj-reviewer.md\n'],
+    ['w', '  wrote   '], ['', '.claude/agents/tj-builder.md\n'],
+    ['w', '  wrote   '], ['', '.claude/settings.json attribution off\n'],
+    ['w', '  wrote   '], ['', 'git core.hooksPath = .githooks\n'],
+    ['w', '  wrote   '], ['', 'CLAUDE.md tjforge block\n'],
+    ['', '\n'],
+    ['p', '› '], ['', 'add a booking page\n'],
+    ['d', '  Fable plans · Opus builds · lead checks'],
+  ];
+  const term = document.getElementById('term');
+  const caret = '<span class="caret" aria-hidden="true"></span>';
+  const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  const render = (parts) => parts.map(([c, t]) => c ? `<span class="${c}">${esc(t)}</span>` : esc(t)).join('');
+  if (reduce) {
+    term.innerHTML = render(lines) + caret;
+  } else {
+    const done = [];
+    let i = 0, j = 0;
+    const tick = () => {
+      if (i >= lines.length) { term.innerHTML = render(done) + caret; return; }
+      const [c, t] = lines[i];
+      const typed = c === '' && lines[i - 1] && lines[i - 1][0] === 'p';
+      if (typed) {
+        j++;
+        term.innerHTML = render(done) + render([[c, t.slice(0, j)]]) + caret;
+        if (j < t.length) return setTimeout(tick, 38);
+      }
+      done.push([c, t]); i++; j = 0;
+      term.innerHTML = render(done) + caret;
+      setTimeout(tick, typed ? 380 : (c === 'w' ? 30 : 110));
+    };
+    setTimeout(tick, 700);
+  }
+
+  /* routing demo */
+  const routes = {
+    typo:    { path: ['inline', 'report'], why: 'One file, obvious change. Delegating would cost more tokens than doing it.' },
+    health:  { path: ['fill', 'check', 'report'], why: 'Fully specified and copies an existing pattern, so Sonnet at low effort. If it hits ambiguity, it moves up to Opus.' },
+    stripe:  { path: ['think', 'build', 'check', 'review', 'report'], why: 'Big and touches money: Fable plans, Opus builds, the lead reruns tests once, and an independent reviewer checks the diff.' },
+    bug:     { path: ['think', 'build', 'check', 'report'], why: 'Cause unknown, so Fable investigates first. Open questions never go to a cheaper model.' },
+    landing: { path: ['think', 'build', 'check', 'report'], why: 'Expressive UI stays on Opus: the design brief is the first thing a cheaper model drops.' },
+  };
+  const names = { inline: 'inline', think: 'Fable plans', build: 'Opus builds', fill: 'Sonnet fills', check: 'lead checks', review: 'Opus reviews', report: 'report' };
+  const stations = [...document.querySelectorAll('.station')];
+  const trace = document.getElementById('trace');
+  let timers = [];
+  const run = (key) => {
+    timers.forEach(clearTimeout); timers = [];
+    stations.forEach(s => { s.classList.remove('on'); s.querySelector('.order').textContent = ''; });
+    const r = routes[key];
+    trace.innerHTML = '';
+    const seq = document.createElement('div');
+    const why = document.createElement('div'); why.className = 'why';
+    trace.append(seq, why);
+    r.path.forEach((s, idx) => {
+      timers.push(setTimeout(() => {
+        const el = stations.find(x => x.dataset.s === s);
+        el.querySelector('.order').textContent = idx + 1;
+        el.classList.add('on');
+        seq.textContent = r.path.slice(0, idx + 1).map(p => names[p]).join('  →  ');
+        if (idx === r.path.length - 1) why.textContent = r.why;
+      }, reduce ? 0 : idx * 420));
+    });
+  };
+  document.querySelectorAll('.req').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.req').forEach(x => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+    run(b.dataset.route);
+  }));
+  document.querySelectorAll('.req:not([aria-pressed])').forEach(b => b.setAttribute('aria-pressed', 'false'));
+
+  /* start the demo when it scrolls into view */
+  const board = document.querySelector('.board');
+  let started = false;
+  const io2 = new IntersectionObserver(es => {
+    if (es.some(e => e.isIntersecting) && !started) { started = true; run('stripe'); io2.disconnect(); }
+  }, { threshold: .4 });
+  io2.observe(board);
+
+  /* reveal */
+  const io = new IntersectionObserver(es => es.forEach(e => {
+    if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+  }), { rootMargin: '0px 0px -8% 0px' });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  /* tabs */
+  const tabs = [...document.querySelectorAll('.tab')];
+  const select = (t) => {
+    tabs.forEach(x => {
+      const on = x === t;
+      x.setAttribute('aria-selected', on); x.tabIndex = on ? 0 : -1;
+      document.getElementById(x.getAttribute('aria-controls')).hidden = !on;
+    });
+    t.focus();
+  };
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => select(t));
+    t.addEventListener('keydown', e => {
+      if (e.key === 'ArrowRight') select(tabs[(i + 1) % tabs.length]);
+      if (e.key === 'ArrowLeft') select(tabs[(i - 1 + tabs.length) % tabs.length]);
+    });
+  });
+
+  /* copy */
+  document.querySelectorAll('.copy').forEach(b => b.addEventListener('click', async () => {
+    const text = b.previousElementSibling.textContent;
+    try { await navigator.clipboard.writeText(text); b.textContent = 'Copied'; b.classList.add('done'); }
+    catch { b.textContent = 'Select ↑'; }
+    setTimeout(() => { b.textContent = 'Copy'; b.classList.remove('done'); }, 1800);
+  }));
+})();
+</script>
+</body>
+</html>
