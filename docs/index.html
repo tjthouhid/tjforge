@@ -315,6 +315,27 @@ section[id] { scroll-margin-top: 64px; }
 .quick li code { font: 400 .86em var(--mono); background: var(--paper-2); padding: 1px 5px; border-radius: 3px; }
 @media (max-width: 900px) { .install { grid-template-columns: 1fr; } }
 
+/* commands */
+.cmds { margin-top: 72px; }
+.cmds h3 { font: 400 36px/1.05 var(--display); margin: 0 0 6px; }
+.cmds > p { color: var(--ink-soft); margin: 0 0 24px; max-width: 60ch; }
+.cmd-table { width: 100%; border-collapse: collapse; font-size: 15px; }
+.cmd-table th, .cmd-table td { text-align: left; padding: 14px 16px 14px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.cmd-table th { font: 500 11px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); border-bottom-color: var(--ink); }
+.cmd-table td:first-child { white-space: nowrap; width: 1%; }
+.cmd-table td:first-child code { font: 500 14px/1.4 var(--mono); background: var(--ink); color: var(--paper); padding: 4px 8px; border-radius: 3px; }
+.cmd-table td:nth-child(2) { color: var(--ink-soft); }
+.cmd-table td:last-child { font: 400 12px/1.5 var(--mono); color: var(--muted); width: 26%; }
+.cmd-table tr.group td { padding-top: 28px; font: 500 11px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; color: var(--signal); border-bottom: 0; }
+@media (max-width: 760px) {
+  .cmd-table, .cmd-table tbody, .cmd-table tr, .cmd-table td { display: block; width: auto !important; }
+  .cmd-table thead { display: none; }
+  .cmd-table tr { border-bottom: 1px solid var(--line); padding: 14px 0; }
+  .cmd-table tr.group { border-bottom: 0; padding-bottom: 0; }
+  .cmd-table td { border: 0; padding: 3px 0; white-space: normal !important; }
+  .cmd-table td:first-child code { white-space: normal; word-break: break-all; }
+}
+
 /* star band */
 .star-band { padding: 120px 0; text-align: left; border-bottom: 1px solid var(--line); }
 .star-band h2 { font: 400 clamp(48px, 9vw, 132px)/.9 var(--display); letter-spacing: -.025em; margin: 0; }
@@ -354,6 +375,7 @@ footer a { color: var(--ink-soft); }
       <a class="nl" href="#routing">Routing</a>
       <a class="nl" href="#attribution">Attribution</a>
       <a class="nl" href="#install">Install</a>
+      <a class="nl" href="#commands">Commands</a>
       <a class="btn star-btn" href="https://github.com/tjthouhid/tjforge" target="_blank" rel="noopener">
         <svg class="star-icon" viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M8 .25a.75.75 0 0 1 .673.418l1.882 3.815 4.21.612a.75.75 0 0 1 .416 1.279l-3.046 2.97.719 4.192a.75.75 0 0 1-1.088.791L8 12.347l-3.766 1.98a.75.75 0 0 1-1.088-.79l.72-4.194L.818 6.374a.75.75 0 0 1 .416-1.28l4.21-.611L7.327.668A.75.75 0 0 1 8 .25Z"/></svg>
         Star <span class="count" data-stars hidden></span>
@@ -636,6 +658,31 @@ footer a { color: var(--ink-soft); }
           <li><span>If the project had no <code>.claude/agents</code> folder, start a new session so the agents load.</span></li>
           <li><span>Work normally. "Add a booking page." Fable plans and hands work to Opus and Sonnet itself.</span></li>
         </ol>
+      </div>
+    </div>
+
+    <div class="cmds reveal" id="commands">
+      <h3>Every command</h3>
+      <p>Type these in Claude Code. Every run except <code class="mono">check</code> first syncs the project with the latest skill, and prints nothing when it was already current.</p>
+      <div class="table-scroll">
+        <table class="cmd-table">
+          <thead><tr><th>Command</th><th>What it does</th><th>When</th></tr></thead>
+          <tbody>
+            <tr class="group"><td colspan="3">In Claude Code</td></tr>
+            <tr><td><code>/tjforge init</code></td><td>Detects the stack, drafts the contract, asks you to confirm once, proposes design directions for UI projects, installs agents, settings, hook and the CLAUDE.md block. Plain <code class="mono">/tjforge</code> does this in a project that has no profile yet.</td><td>Once per project</td></tr>
+            <tr><td><code>/tjforge &lt;task&gt;</code></td><td>Does a task under the contract with model routing, e.g. <code class="mono">/tjforge add a booking page</code>. Plain requests follow the contract too, but don't sync first.</td><td>Everyday work</td></tr>
+            <tr><td><code>/tjforge design</code></td><td>Redoes only the design brief: three new directions, then rewrites <code class="mono">DESIGN.md</code>.</td><td>Changing the look</td></tr>
+            <tr><td><code>/tjforge sync</code></td><td>Brings agents, hook, settings and the CLAUDE.md block up to date. Never touches your profile or <code class="mono">DESIGN.md</code>, and skips files you edited.</td><td>After updating tjforge, or in a fresh clone</td></tr>
+            <tr><td><code>/tjforge check</code></td><td>Reports what is installed, missing, outdated or edited. Changes nothing.</td><td>Anytime</td></tr>
+            <tr class="group"><td colspan="3">In a terminal</td></tr>
+            <tr><td><code>git -C ~/.claude/skills/tjforge pull</code></td><td>Updates the skill itself.</td><td>When a new version ships</td></tr>
+            <tr><td><code>python3 ~/.claude/skills/tjforge/scripts/install.py</code></td><td>Same as <code class="mono">/tjforge sync</code>, without opening Claude Code. Run it from the project folder.</td><td>Scripts, CI, new clones</td></tr>
+            <tr><td><code>… install.py --check</code></td><td>Report only. Exits 1 if anything is missing, outdated or edited.</td><td>CI checks</td></tr>
+            <tr><td><code>… install.py --quiet</code></td><td>Prints nothing when everything is already in sync.</td><td>Loops over many projects</td></tr>
+            <tr><td><code>… install.py --force</code></td><td>Replaces managed files even if you edited them in the project.</td><td>Only when you want the template back</td></tr>
+            <tr><td><code>git config core.hooksPath .githooks</code></td><td>Turns on the commit hook in a fresh clone (the installer also does this).</td><td>Once per clone</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>

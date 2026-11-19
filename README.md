@@ -75,6 +75,17 @@ You only run `init` once per project. After that the `CLAUDE.md` block makes eve
 
 Init is also triggered automatically when you ask Claude to set up a project that has no `docs/PROJECT-PROFILE.md`.
 
+In a terminal, from the project folder:
+
+| Command | What it does |
+|---|---|
+| `python3 ~/.claude/skills/tjforge/scripts/install.py` | Same as `/tjforge sync`, without opening Claude Code |
+| `… install.py --check` | Report only; exits 1 if anything is missing, outdated or edited |
+| `… install.py --quiet` | Print nothing when everything is already in sync |
+| `… install.py --force` | Replace managed files even if you edited them in the project |
+| `git -C ~/.claude/skills/tjforge pull` | Update the skill itself |
+| `git config core.hooksPath .githooks` | Turn on the commit hook in a fresh clone (the installer also does this) |
+
 ### Auto-sync
 
 Every `/tjforge` run (except `check`) first syncs the project with the current skill. Change tjforge once, and each project picks up the new agents, hook and rules the next time you call `/tjforge` there.
