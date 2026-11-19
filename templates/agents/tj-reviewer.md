@@ -18,10 +18,12 @@ Look for, in this order
 4. Tests: do they exercise the behaviour, and would they fail without the change
 5. Simplicity: code that can go, duplication, needless abstraction
 
-Run the verify commands if you can. Use Bash only to inspect and test.
+Run the verify commands once if you can. For money, auth or access-control
+changes, run the relevant suite three times to rule out flakiness. Use Bash
+only to inspect and test. Spend your attention on the risky parts; skim the rest.
 Report only findings you can point to. No style opinions the linter does not hold.
 
-Return, and nothing else:
+Return, at most 300 words, and nothing else:
 1. Verdict: ship / fix first / rethink
 2. Findings, most severe first: `path:line`, what is wrong, a concrete failing
    scenario, the suggested fix

@@ -178,7 +178,7 @@ python3 ~/.claude/skills/tjforge/scripts/install.py
 |---|---|---|---|---|
 | Think | Fable 5.2 | main session, `tj-architect` | your session setting · `high` | research, architecture, plans for big tasks, unknown-cause bugs, trade-offs |
 | Build | Opus 5.5 | `tj-implementer`, `tj-reviewer` | `medium` · `high` | multi-file features, real logic, known-cause fixes, refactors, migrations, security-sensitive code, review |
-| Fill | Sonnet 5.5 | `tj-builder`, `Explore` | `low` · default | fully specified boilerplate, CRUD from an existing pattern, simple tests, docs, renames, config, codebase search |
+| Fill | Sonnet 5.5 | `tj-builder`, `Explore` | `low` · default | fully specified boilerplate, CRUD or screens from an existing pattern, test-only changes, docs, copy edits, renames, config, codebase search |
 | Inline | current | main session | session | one file, about 20 lines, obvious change |
 
 How a task is routed:
@@ -228,6 +228,22 @@ Why these effort levels: planning and review are where deeper reasoning catches 
 Precedence, highest first: the `CLAUDE_CODE_EFFORT_LEVEL` environment variable, then an effort passed for one delegation, then the agent's `effort:` field, then your session level. Your session level (`/effort`) only applies to agents on the same model as the main session, so tjforge pins each agent's level instead.
 
 The full rules are in [references/routing.md](references/routing.md).
+
+### Budget
+
+Rules that keep token use down on every task:
+
+| Rule | Detail |
+|---|---|
+| Tests run once | The agent runs each suite once and the lead reruns it once. Three runs in a row only for money, auth or access-control changes, a suspected flaky test, or a release exit |
+| Cheapest proof first | Unit, then integration, then end to end. Full end-to-end only when the change is visible in a browser or touches a shared path |
+| Short briefs | At most 40 lines: goal, files, done-when, three review points. Docs by path, never pasted history |
+| Short reports | Implementer 200 words, builder 120, reviewer 300, unless a failure needs explaining |
+| Batch small work | Small related tasks go to one agent with one verification run |
+| Review by risk | The lead reads migrations, auth, money and the brief's review points closely, and skims the rest |
+| Ceiling | Past about 300k agent tokens or one hour, Claude stops and tells you why before continuing |
+
+Schema, money, security and concurrency always go to Opus. New UI on an expressive surface also stays on Opus, because the design brief is the first thing a cheaper model drops. Screens that copy an existing pattern can go to Sonnet.
 
 ## No AI attribution
 

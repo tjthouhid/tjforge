@@ -24,7 +24,11 @@ How to work
 - If the brief is wrong or a design decision is missing, stop and report it
   instead of guessing.
 
-Return, and nothing else:
+Run each verify command once, cheapest first (unit, then integration, then end
+to end). Run end-to-end tests only if the change is visible in a browser or
+touches a shared path. Repeat a run only to check a suspected flaky test.
+
+Return, at most 200 words unless a failure needs explaining, and nothing else:
 1. Status: done / partly done / blocked
 2. Files changed, one line each on what changed
 3. Commands run with their real results (pass/fail counts, the error if any)

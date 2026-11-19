@@ -20,7 +20,9 @@ How to work
 - Do not commit or push unless told to. Never add Co-Authored-By trailers or
   "Generated with" footers.
 
-Return, and nothing else:
+Run the verify commands once, cheapest first. Do not repeat passing runs.
+
+Return, at most 120 words, and nothing else:
 1. Status: done / stopped (with the exact reason)
 2. Files changed
 3. Commands run and results

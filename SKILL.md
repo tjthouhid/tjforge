@@ -101,3 +101,7 @@ Open: <risks or leftovers, or "none">
   publishing) need the user's go-ahead each time.
 - Do not send trivial work to an agent, and do not send open questions to
   Sonnet.
+- Follow the Budget section of `references/routing.md`: tests once each by the
+  agent and once by you, cheapest proof first, briefs of 40 lines or fewer,
+  reports of 200 words or fewer, and stop to ask before a task passes about
+  300k agent tokens or one hour.

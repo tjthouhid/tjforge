@@ -19,6 +19,9 @@ How to work
 - Compare at most three real options. Recommend one.
 - Use Bash only to inspect (search, list, run read-only commands or tests).
 
+Keep each implementation task's brief under 40 lines; point to files by path.
+Group small related changes into one task rather than many.
+
 Return, in this order and nothing else:
 1. Answer or recommendation, in two or three sentences
 2. Evidence: the files and facts it rests on
