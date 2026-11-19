@@ -52,6 +52,15 @@ git -C ~/.claude/skills/tjforge pull
 
 Requires Claude Code, `git`, `bash` and `python3` (macOS and Linux ship them).
 
+## Quick start
+
+1. Open the project in Claude Code. Pick **Fable 5.2** as the model; use effort high for big planning sessions, medium for everyday work.
+2. Run `/tjforge init`. Accept or adjust the summary, and pick a design direction if the project has a UI.
+3. If the project had no `.claude/agents` folder before, start a new session so the agents load.
+4. Work normally: "add a booking page", "fix the checkout bug", or `/tjforge <task>`. Fable plans and hands work to Opus and Sonnet agents itself.
+
+You only run `init` once per project. After that the `CLAUDE.md` block makes every session follow the contract.
+
 ## Usage
 
 | Command | What it does |
@@ -220,7 +229,7 @@ Rules:
 - A task is big when it touches more than 3 files, adds a module or data model, changes a public interface, or has an unknown cause. Big tasks get a plan before code.
 - Open questions never go to Sonnet. If a Sonnet task fails once or hits ambiguity, it moves up to Opus instead of retrying.
 - Parallel agents never share a file.
-- An agent's report is a claim. The main session reads the diff and checks the verify commands before saying done.
+- An agent's report is a claim. The main session reruns the verify commands once and reads the risky parts of the diff before saying done.
 - Risky changes (auth, money, migrations, public API, concurrency) get an independent `tj-reviewer` pass.
 
 Why these effort levels: planning and review are where deeper reasoning catches mistakes, and they run rarely, so they get `high`. The implementer works from a finished plan, so `medium` gets the same result for fewer tokens. The builder's work is fully specified, so `low` is enough.
@@ -228,6 +237,32 @@ Why these effort levels: planning and review are where deeper reasoning catches 
 Precedence, highest first: the `CLAUDE_CODE_EFFORT_LEVEL` environment variable, then an effort passed for one delegation, then the agent's `effort:` field, then your session level. Your session level (`/effort`) only applies to agents on the same model as the main session, so tjforge pins each agent's level instead.
 
 The full rules are in [references/routing.md](references/routing.md).
+
+### Parallel agents
+
+An agent file is a template, not a single worker. The main session can start several copies at once, one per task, and each copy runs on the model and effort pinned in its file. Two `tj-implementer` copies are both Opus 5.5 at medium, whatever the main session runs.
+
+```mermaid
+flowchart TD
+    M["Main session · Fable 5.2<br/>plans and splits the work"] --> I1["tj-implementer #1<br/>Opus 5.5 · medium<br/>payments API"]
+    M --> I2["tj-implementer #2<br/>Opus 5.5 · medium<br/>email notifications"]
+    M --> B1["tj-builder<br/>Sonnet 5.5 · low<br/>settings screen"]
+    I1 --> C["Main session checks each diff<br/>and reruns the tests once"]
+    I2 --> C
+    B1 --> C
+    C --> R["tj-reviewer · Opus 5.5 · high<br/>on the risky diff"]
+    R --> U([Report to you])
+```
+
+| Situation | What happens |
+|---|---|
+| Independent tasks on different files | Separate copies, in parallel |
+| Small related tasks | One copy does them all, with one verification run (shared context loads once) |
+| Task B needs task A's result, or both edit the same file | One after another |
+
+- Each copy starts fresh. It knows only its brief and the project files.
+- Agents do not talk to each other. Each reports to the main session, which combines and checks the results.
+- Parallel agents share the working folder, so they are never given the same file. For full isolation, add `isolation: worktree` to an agent file. Each copy then works in its own git worktree, and you merge the branches afterwards.
 
 ### Budget
 
@@ -315,6 +350,23 @@ templates/
 - **Models and effort.** The agents pin exact model IDs (`claude-fable-5-2`, `claude-opus-5-5`, `claude-sonnet-5-5`) and an `effort:` level (`low`, `medium`, `high`, `xhigh` or `max`; available levels depend on the model) in `templates/agents/*.md`. Change those lines; each project picks them up on its next `/tjforge` run, or straight away with `/tjforge sync`.
 - **Rules.** Edit the files in `references/`. They are plain Markdown and are read fresh on every run.
 - **Per project.** Edit `docs/PROJECT-PROFILE.md` or `DESIGN.md` directly. Claude treats them as the contract, and they override tjforge's defaults.
+
+## What to expect
+
+tjforge is designed to use fewer tokens, finish faster and produce more consistent work. Those gains have not been benchmarked. To measure them, run the same task on two copies of a project, with and without tjforge, and compare tokens, time and the result.
+
+| | Expected effect | Why |
+|---|---|---|
+| Tokens | Lower | Trivial edits inline, mechanical work on Sonnet at low effort, tests run once, capped briefs and reports |
+| Speed | Usually faster | Low-effort agents, parallel copies, fewer reruns. Slower for the one-time `init`, and for tiny tasks if they were delegated (they are not) |
+| Quality | More consistent | Same contract and design brief every session, tests rerun by the lead, independent review of risky changes |
+
+It does not make the work perfect:
+
+- Claude follows the written rules most of the time, not always. Only the commit hook and the attribution setting are enforced mechanically.
+- A task misrouted to Sonnet costs one retry on Opus.
+- Short reports can hide detail. That is why the lead reruns the tests itself.
+- Review the result yourself, especially design taste, business logic and anything going to production.
 
 ## Notes
 
