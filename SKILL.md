@@ -1,7 +1,7 @@
 ---
 name: tjforge
 description: Sets up and enforces a project's engineering contract - detected stack, system design, coding standards, design brief, three-tier model routing (Fable 5.2 thinks, Opus 5.5 builds, Sonnet 5.5 fills) and a no-AI-attribution git hook. Use when the user says "/tjforge", "set up this project", "init engineering", "apply my engineering rules", starts work in a project that has no docs/PROJECT-PROFILE.md, or asks for a large feature in a project that has one.
-argument-hint: "[init | design | check | <task>]"
+argument-hint: "[init | design | check | sync | <task>]"
 ---
 
 # tjforge
@@ -12,6 +12,21 @@ then follow it in every session.
 Skill directory: `${CLAUDE_SKILL_DIR}` (if that is empty, `~/.claude/skills/tjforge`).
 Arguments: `$ARGUMENTS`
 
+## Sync first
+
+On every run except Init (which installs anyway) and `check`, start with:
+
+```bash
+python3 "${CLAUDE_SKILL_DIR}/scripts/install.py" --quiet
+```
+
+It brings the project's agents, hook, settings and CLAUDE.md block up to date
+with this skill's templates. It never touches `docs/PROJECT-PROFILE.md` or
+`DESIGN.md`, and it skips any managed file the project has edited. No output
+means everything was already current: say nothing about it. Otherwise relay
+the `updated` and `WARN` lines in one or two lines. Never re-run it with
+`--force` unless the user asks.
+
 ## Pick the mode
 
 | Condition | Mode |
@@ -19,6 +34,7 @@ Arguments: `$ARGUMENTS`
 | argument `init`, or `docs/PROJECT-PROFILE.md` is missing | Init |
 | argument `design` | Design brief only (step 3, then rewrite `DESIGN.md`) |
 | argument `check` | Run `python3 "${CLAUDE_SKILL_DIR}/scripts/install.py" --check` and report |
+| argument `sync` | Run the sync above without `--quiet` and report; nothing else |
 | anything else | Work, with the arguments as the task |
 
 ## Init

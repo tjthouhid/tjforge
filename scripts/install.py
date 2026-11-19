@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
 """tjforge install: put the enforcement pieces into the project in the current
-directory. Idempotent. `--check` reports without writing and exits 1 if
-anything is missing.
+directory, or bring them up to date. Idempotent.
+
+  --check   report only; exit 1 if anything is missing, outdated or edited
+  --quiet   print nothing when everything is already in sync
+  --force   replace managed files even if they were edited in the project
+
+Files tjforge manages are recorded with a hash in .claude/tjforge.lock.json.
+A managed file that still matches its recorded hash is updated automatically;
+one that was edited in the project is left alone with a WARN line.
 
 Installs:
   .claude/agents/tj-*.md      subagents pinned to their models
@@ -9,6 +16,7 @@ Installs:
   .githooks/commit-msg        strips AI-attribution trailers, and is activated
   CLAUDE.md                   the tjforge block (between markers)
 """
+import hashlib
 import json
 import subprocess
 import sys
@@ -17,10 +25,13 @@ from pathlib import Path
 SKILL = Path(__file__).resolve().parent.parent
 TEMPLATES = SKILL / "templates"
 CHECK = "--check" in sys.argv
+QUIET = "--quiet" in sys.argv
+FORCE = "--force" in sys.argv
 START, END = "<!-- tjforge:start -->", "<!-- tjforge:end -->"
 CHAIN = '"$(git rev-parse --show-toplevel)/.githooks/commit-msg" "$1" # tjforge'
 
 missing = 0
+lines = []
 
 
 def git(*args):
@@ -31,33 +42,65 @@ def git(*args):
 code, top = git("rev-parse", "--show-toplevel")
 IS_REPO = code == 0
 ROOT = Path(top) if IS_REPO else Path.cwd()
+LOCK = ROOT / ".claude" / "tjforge.lock.json"
+try:
+    lock = json.loads(LOCK.read_text()).get("files", {}) if LOCK.exists() else {}
+except (json.JSONDecodeError, AttributeError):
+    lock = {}
+lock_changed = False
+
+
+def sha(text):
+    return hashlib.sha256(text.encode()).hexdigest()
+
+
+def record(key, text):
+    global lock_changed
+    h = sha(text)
+    if lock.get(key) != h:
+        lock[key] = h
+        lock_changed = True
+
+
+def edited(key, current):
+    """True when the project's copy differs from what tjforge last installed."""
+    return lock.get(key) != sha(current)
 
 
 def report(state, what):
     global missing
-    if state == "MISSING":
+    if state in ("MISSING", "EDITED"):
         missing += 1
-    print(f"{state:8} {what}")
+    lines.append((state, f"{state:8} {what}"))
 
 
 def sync_file(src, dst, executable=False):
     """Copy src to dst if missing or different."""
     want = src.read_text()
     rel = dst.relative_to(ROOT)
-    if dst.exists() and dst.read_text() == want:
-        if executable and not CHECK:
-            dst.chmod(0o755)
+    key = str(rel)
+    current = dst.read_text() if dst.exists() else None
+    if current == want:
+        if not CHECK:
+            if executable:
+                dst.chmod(0o755)
+            record(key, want)
         report("ok", rel)
         return
-    existed = dst.exists()
+    if current is not None and edited(key, current) and not FORCE:
+        report("EDITED" if CHECK else "WARN",
+               f"{rel} was edited in this project; not replaced. Merge the new template by hand, "
+               f"or re-run with --force to replace it.")
+        return
     if CHECK:
-        report("MISSING", f"{rel}{' (outdated)' if existed else ''}")
+        report("MISSING", f"{rel}{' (outdated)' if current is not None else ''}")
         return
     dst.parent.mkdir(parents=True, exist_ok=True)
     dst.write_text(want)
     if executable:
         dst.chmod(0o755)
-    report("updated" if existed else "wrote", rel)
+    record(key, want)
+    report("updated" if current is not None else "wrote", rel)
 
 
 def agents():
@@ -154,19 +197,29 @@ def claude_md():
     block = (TEMPLATES / "claude-md-block.md").read_text().strip()
     path = ROOT / "CLAUDE.md"
     text = path.read_text() if path.exists() else ""
+    key = "CLAUDE.md#tjforge"
     if START in text and END in text:
         head, rest = text.split(START, 1)
-        _, tail = rest.split(END, 1)
+        old_body, tail = rest.split(END, 1)
+        current = START + old_body + END
         new = head + block + tail
     else:
+        current = None
         new = (text.rstrip("\n") + "\n\n" if text.strip() else "") + block + "\n"
     if new == text:
+        if not CHECK:
+            record(key, block)
         report("ok", "CLAUDE.md tjforge block")
+    elif current is not None and edited(key, current) and not FORCE:
+        report("EDITED" if CHECK else "WARN",
+               "CLAUDE.md tjforge block was edited in this project; not replaced. "
+               "Put project rules outside the markers, or re-run with --force.")
     elif CHECK:
-        report("MISSING", "CLAUDE.md tjforge block")
+        report("MISSING", f"CLAUDE.md tjforge block{' (outdated)' if current else ''}")
     else:
         path.write_text(new)
-        report("wrote", "CLAUDE.md tjforge block")
+        record(key, block)
+        report("updated" if current else "wrote", "CLAUDE.md tjforge block")
 
 
 def contract():
@@ -177,10 +230,19 @@ def contract():
             report("MISSING" if CHECK else "WARN", f"{rel} not written yet (run /tjforge init)")
 
 
-print(f"tjforge {'check' if CHECK else 'install'}: {ROOT}")
 agents()
 settings()
 hook()
 claude_md()
 contract()
+
+if lock_changed and not CHECK:
+    LOCK.parent.mkdir(parents=True, exist_ok=True)
+    LOCK.write_text(json.dumps({"files": dict(sorted(lock.items()))}, indent=2) + "\n")
+
+if not (QUIET and all(state == "ok" for state, _ in lines)):
+    print(f"tjforge {'check' if CHECK else 'install'}: {ROOT}")
+    for state, line in lines:
+        if not (QUIET and state == "ok"):
+            print(line)
 sys.exit(1 if (CHECK and missing) else 0)

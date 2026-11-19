@@ -58,10 +58,21 @@ Requires Claude Code, `git`, `bash` and `python3` (macOS and Linux ship them).
 |---|---|
 | `/tjforge` or `/tjforge init` | Detect, draft the contract, confirm with you once, install enforcement |
 | `/tjforge design` | Redo the design brief only |
-| `/tjforge check` | Report what is installed and what is missing |
+| `/tjforge check` | Report what is installed, missing, outdated or edited |
+| `/tjforge sync` | Bring the project's agents, hook, settings and CLAUDE.md block up to date |
 | `/tjforge <task>` | Do a task under the contract, with model routing |
 
 Init is also triggered automatically when you ask Claude to set up a project that has no `docs/PROJECT-PROFILE.md`.
+
+### Auto-sync
+
+Every `/tjforge` run (except `check`) first syncs the project with the current skill. Change tjforge once, and each project picks up the new agents, hook and rules the next time you call `/tjforge` there.
+
+- Your `docs/PROJECT-PROFILE.md` and `DESIGN.md` are never touched.
+- Files tjforge manages are recorded with a hash in `.claude/tjforge.lock.json`. A file you edited in a project is left alone, with a warning saying so. Re-run with `--force` only if you want the template back.
+- When nothing changed it prints nothing, so it costs almost no tokens.
+
+Plain sessions that do not call `/tjforge` still follow the contract, but they do not sync. Run `/tjforge sync` after updating tjforge if you want a project refreshed without starting a task.
 
 ### Which command when
 
@@ -72,8 +83,7 @@ flowchart TD
     Q1 -- Yes --> Q2{What now?}
     Q2 -- "Build or fix something" --> T["/tjforge #lt;task#gt;<br/>or just ask normally"]
     Q2 -- "Change the look" --> D["/tjforge design"]
-    Q2 -- "Fresh clone or new machine" --> C["/tjforge check"]
-    C -- "MISSING lines" --> R["python3 ~/.claude/skills/tjforge/scripts/install.py"]
+    Q2 -- "Fresh clone, new machine<br/>or tjforge updated" --> C["/tjforge sync"]
 ```
 
 Once init has run, plain requests ("add a pricing page", "fix the login bug") follow the contract too, because the `CLAUDE.md` block points every session at it.
@@ -140,6 +150,7 @@ your-project/
 ├── DESIGN.md                     design brief (UI projects only)
 ├── docs/PROJECT-PROFILE.md       the engineering contract
 ├── .claude/
+│   ├── tjforge.lock.json         hashes of managed files, so your edits are never overwritten
 │   ├── settings.json             attribution off (existing keys are merged, not replaced)
 │   └── agents/
 │       ├── tj-architect.md       Fable 5.2 · high, read-only research and planning
@@ -285,7 +296,7 @@ templates/
 
 ## Customising
 
-- **Models and effort.** The agents pin exact model IDs (`claude-fable-5-2`, `claude-opus-5-5`, `claude-sonnet-5-5`) and an `effort:` level (`low`, `medium`, `high`, `xhigh` or `max`; available levels depend on the model) in `templates/agents/*.md`. Change those lines, then re-run `scripts/install.py` in each project to sync them (`/tjforge check` shows which are out of date).
+- **Models and effort.** The agents pin exact model IDs (`claude-fable-5-2`, `claude-opus-5-5`, `claude-sonnet-5-5`) and an `effort:` level (`low`, `medium`, `high`, `xhigh` or `max`; available levels depend on the model) in `templates/agents/*.md`. Change those lines; each project picks them up on its next `/tjforge` run, or straight away with `/tjforge sync`.
 - **Rules.** Edit the files in `references/`. They are plain Markdown and are read fresh on every run.
 - **Per project.** Edit `docs/PROJECT-PROFILE.md` or `DESIGN.md` directly. Claude treats them as the contract, and they override tjforge's defaults.
 
@@ -293,7 +304,11 @@ templates/
 
 - Claude Code picks up agent files without a restart, except in a project that had no `.claude/agents` folder before. There they load on the next session, and until then tjforge falls back to general-purpose agents with an explicit model.
 - `install.py` is safe to re-run. It only writes what is missing or out of date, and `--check` exits 1 when anything is missing or outdated.
-- After updating tjforge, re-run `install.py` in each project that uses it so its agents match the new templates. To find those projects: `find ~ -path '*/.claude/agents/tj-architect.md' -not -path '*/Library/*' 2>/dev/null`
+- To refresh every project at once after updating tjforge, without opening each one:
+
+  ```bash
+  find ~ -path '*/.claude/tjforge.lock.json' -not -path '*/Library/*' 2>/dev/null | while read -r f; do (cd "$(dirname "$(dirname "$f")")" && python3 ~/.claude/skills/tjforge/scripts/install.py --quiet); done
+  ```
 - Nothing is committed during init unless you ask.
 
 ## License
