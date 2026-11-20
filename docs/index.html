@@ -407,7 +407,7 @@ footer a { color: var(--ink-soft); }
         </a>
       </div>
       <div class="hero-meta">
-        <span>Fable 5.2 plans</span><span>Opus 5.5 builds</span><span>Sonnet 5.5 fills in</span><span>no Co-Authored-By</span>
+        <span>Fable 5.2 plans</span><span>Opus 5.5 builds</span><span>Sonnet 5.5 fills in</span><span>no Co-Authored-By</span><span data-cloners hidden></span>
       </div>
     </div>
 
@@ -724,6 +724,18 @@ footer a { color: var(--ink-soft); }
       const n = d.stargazers_count;
       const txt = n >= 1000 ? (n / 1000).toFixed(1).replace(/\.0$/, '') + 'k' : String(n);
       document.querySelectorAll('[data-stars]').forEach(el => { el.textContent = txt; el.hidden = false; });
+    })
+    .catch(() => {});
+
+  /* unique cloners, updated weekly by .github/workflows/downloads.yml */
+  fetch('downloads.json', { cache: 'no-cache' })
+    .then(r => r.ok ? r.json() : null)
+    .then(d => {
+      if (!d || typeof d.unique_cloners !== 'number' || d.unique_cloners < 1) return;
+      const el = document.querySelector('[data-cloners]');
+      el.textContent = d.unique_cloners.toLocaleString('en') + ' unique cloners';
+      el.title = 'Distinct cloners per day, summed since ' + d.since + '. Updated ' + d.updated + '.';
+      el.hidden = false;
     })
     .catch(() => {});
 
