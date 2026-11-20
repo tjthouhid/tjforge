@@ -1,0 +1,52 @@
+name: Bug report
+description: Something in tjforge did not work as described.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for reporting. For a security problem, use the Security tab instead of this form.
+  - type: input
+    id: command
+    attributes:
+      label: Command you ran
+      placeholder: /tjforge init
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: Include any error text. Paste it as text, not a screenshot.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations:
+      required: true
+  - type: textarea
+    id: check
+    attributes:
+      label: Output of the installer check
+      description: "Run from the project folder: python3 ~/.claude/skills/tjforge/scripts/install.py --check"
+      render: text
+  - type: input
+    id: claude
+    attributes:
+      label: Claude Code version
+      description: Output of `claude --version`
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: OS
+      options: [macOS, Linux, Windows (WSL), Other]
+    validations:
+      required: true
+  - type: input
+    id: stack
+    attributes:
+      label: Project stack
+      placeholder: Next.js + TypeScript, Laravel, empty project...

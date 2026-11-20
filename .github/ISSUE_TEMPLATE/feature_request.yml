@@ -1,0 +1,23 @@
+name: Feature request
+description: Suggest a change or a new idea.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: The problem
+      description: What were you trying to do, and what got in the way?
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: Your idea
+      description: How could tjforge solve it?
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you use today
+      description: Any workaround you use now, such as editing CLAUDE.md by hand.

@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: How tjforge works
+    url: https://tjthouhid.github.io/tjforge/
+    about: Read the guide and command reference before opening an issue.
+  - name: Report a security problem
+    url: https://github.com/tjthouhid/tjforge/security/advisories/new
+    about: Report vulnerabilities privately, not as a public issue.
