@@ -28,7 +28,7 @@ flowchart LR
 | Landing pages, portfolios, brand sites | The design brief forces a specific direction with no centered hero, default fonts or stock copy |
 | Product apps and dashboards | A restrained stance: tokens, consistent states, motion only as feedback |
 | Long or multi-session work | `CLAUDE.md` and the profile carry the decisions, so you do not re-explain them each session |
-| Large features | Fable plans, Opus builds, Sonnet fills in, and risky diffs get an independent review |
+| Large features | Sonnet leads and fills in, Opus builds only the risky parts, Fable advises on call, and risky diffs get an independent review |
 | Repos where commits must look human-authored | Attribution is off at the source and stripped by a hook |
 
 | Not worth it | Use instead |
@@ -52,14 +52,16 @@ Update:
 git -C ~/.claude/skills/tjforge pull
 ```
 
+`/tjforge` checks for a newer version at most once a day and prints one line when there is one. It never updates by itself. To hear about releases on GitHub, choose **Watch → Custom → Releases** on the repository. What changed, and how to upgrade a project, is in [CHANGELOG.md](CHANGELOG.md).
+
 Requires Claude Code, `git`, `bash` and `python3` (macOS and Linux ship them).
 
 ## Quick start
 
-1. Open the project in Claude Code. Pick **Fable 5.2** as the model; use effort high for big planning sessions, medium for everyday work.
+1. Open the project in Claude Code. Pick **Sonnet 5.5** as the model (Opus 5.5 for a build that is mostly schema, money or access rules); effort medium.
 2. Run `/tjforge init`. Accept or adjust the summary, and pick a design direction if the project has a UI.
 3. If the project had no `.claude/agents` folder before, start a new session so the agents load.
-4. Work normally: "add a booking page", "fix the checkout bug", or `/tjforge <task>`. Fable plans and hands work to Opus and Sonnet agents itself.
+4. Work normally: "add a booking page", "fix the checkout bug", or `/tjforge <task>`. The session plans and hands work to Sonnet and Opus agents itself, and asks Fable only for rulings.
 
 You only run `init` once per project. After that the `CLAUDE.md` block makes every session follow the contract.
 
@@ -171,14 +173,19 @@ your-project/
 ├── CLAUDE.md                     tjforge block added between markers (your content is kept)
 ├── DESIGN.md                     design brief (UI projects only)
 ├── docs/PROJECT-PROFILE.md       the engineering contract
+├── docs/worker-brief.md          standing rules workers read (60 lines or fewer)
+├── docs/decisions-log.md         one line per decision; workers do not read it
+├── docs/builds/<name>/           plan, tasks.json, resume and notes of a multi-task build
 ├── .claude/
 │   ├── tjforge.lock.json         hashes of managed files, so your edits are never overwritten
 │   ├── settings.json             attribution off (existing keys are merged, not replaced)
+│   ├── tjforge/quiet-test.sh     quiet test wrapper (logs/ is git-ignored)
 │   └── agents/
-│       ├── tj-architect.md       Fable 5.2 · high, read-only research and planning
-│       ├── tj-implementer.md     Opus 5.5 · medium, implementation
+│       ├── tj-architect.md       Fable 5.2 · high, read-only advisor on call
+│       ├── tj-implementer.md     Opus 5.5 · medium, the risky parts
 │       ├── tj-reviewer.md        Opus 5.5 · high, read-only independent review
-│       └── tj-builder.md         Sonnet 5.5 · low, mechanical work
+│       ├── tj-builder.md         Sonnet 5.5 · low, the default worker
+│       └── tj-scout.md           Haiku 5.5 · low, lookups and test runs (trial)
 └── .githooks/commit-msg          strips AI-attribution trailers
 ```
 
@@ -196,12 +203,17 @@ python3 ~/.claude/skills/tjforge/scripts/install.py
 
 ## Model routing
 
+The rule is the smallest model that gets it right the first time. The biggest model is an advisor you call, not the lead.
+
 | Tier | Model | Agent | Effort | Use for |
 |---|---|---|---|---|
-| Think | Fable 5.2 | main session, `tj-architect` | your session setting · `high` | research, architecture, plans for big tasks, unknown-cause bugs, trade-offs |
-| Build | Opus 5.5 | `tj-implementer`, `tj-reviewer` | `medium` · `high` | multi-file features, real logic, known-cause fixes, refactors, migrations, security-sensitive code, review |
-| Fill | Sonnet 5.5 | `tj-builder`, `Explore` | `low` · default | fully specified boilerplate, CRUD or screens from an existing pattern, test-only changes, docs, copy edits, renames, config, codebase search |
+| Scout (trial) | Haiku 5.5 | `tj-scout` | `low` | read-only lookups, running a test command and reporting the result |
+| Fill (default) | Sonnet 5.5 | `tj-builder`, `Explore` | `low` · default | anything that copies a named pattern: routes, screens, CRUD, tests, e2e specs, docs, config, renames, code inventories for a plan |
+| Build | Opus 5.5 | `tj-implementer`, `tj-reviewer` | `medium` · `high` | only the risky part of a task: schema and migrations, access rules, money, concurrency, a new provider interface, an unknown-cause bug, review |
+| Advisor | Fable 5.2 | `tj-architect` | `high` | on call: a ruling when a worker is blocked, a root cause Opus missed, a trade-off you ask about. 300 words or fewer |
 | Inline | current | main session | session | one file, about 20 lines, obvious change |
+
+The lead of a multi-task build runs on **Sonnet 5.5**, or Opus 5.5 when most of the build is risky. This follows Anthropic's [advisor pattern](https://claude.com/blog/the-advisor-strategy): a cheaper model does the work and consults the biggest model only at decision points.
 
 How a task is routed:
 
@@ -209,18 +221,19 @@ How a task is routed:
 flowchart TD
     T([New task]) --> A{"Trivial?<br/>1 file, ~20 lines, obvious"}
     A -- Yes --> IN["Inline<br/>main session"]
-    A -- No --> B{"Cause or design<br/>unknown?"}
-    B -- Yes --> TH["Think · Fable 5.2<br/>research + plan"]
-    TH --> P["Plan split into tasks<br/>with no shared files"]
-    B -- No --> P
-    P --> E{"Could a careful junior<br/>do it with no decisions left?"}
-    E -- Yes --> F["Fill · Sonnet 5.5<br/>tj-builder"]
-    E -- No --> BU["Build · Opus 5.5<br/>tj-implementer"]
+    A -- No --> Q{"Design question open?"}
+    Q -- Yes --> R0["Ruling first<br/>you, or tj-architect · Fable"]
+    R0 --> S
+    Q -- No --> S{"Risky part?<br/>schema, access, money,<br/>concurrency, unknown cause"}
+    S -- "Yes, whole task" --> BU["Build · Opus 5.5<br/>tj-implementer"]
+    S -- "Some of it" --> SP["Split: backend task (Opus)<br/>then screen task (Sonnet)"]
+    S -- No --> F["Fill · Sonnet 5.5<br/>tj-builder"]
     F -- "fails or ambiguous" --> BU
-    BU -- "cause still unknown" --> TH
-    F --> V["Main session checks<br/>diff + verify commands"]
+    BU -- "cause still unknown" --> R0
+    F --> V["Lead reads the risky diff<br/>and runs the cheapest check"]
     BU --> V
-    V --> RK{"Risky?<br/>auth, money, migration,<br/>public API, concurrency"}
+    SP --> V
+    V --> RK{"Risky?"}
     RK -- Yes --> RV["tj-reviewer · Opus 5.5"]
     RK -- No --> DONE([Report])
     RV --> DONE
@@ -232,66 +245,50 @@ Examples:
 |---|---|
 | "Fix the typo in the footer" | Inline |
 | "Add a `/health` endpoint like the existing `/status`" | Fill (Sonnet) |
-| "Add Stripe checkout with webhooks" | Think plans → Build implements → Reviewer checks |
-| "Checkout fails for some users, no idea why" | Think investigates → Build fixes |
-| "Rename `userId` to `accountId` across the app" | Fill, split by folder, in parallel |
-| "Should we split search into its own service?" | Think only |
-
-Rules:
-
-- A task is big when it touches more than 3 files, adds a module or data model, changes a public interface, or has an unknown cause. Big tasks get a plan before code.
-- Open questions never go to Sonnet. If a Sonnet task fails once or hits ambiguity, it moves up to Opus instead of retrying.
-- Parallel agents never share a file.
-- An agent's report is a claim. The main session reruns the verify commands once and reads the risky parts of the diff before saying done.
-- Risky changes (auth, money, migrations, public API, concurrency) get an independent `tj-reviewer` pass.
-
-Why these effort levels: planning and review are where deeper reasoning catches mistakes, and they run rarely, so they get `high`. The implementer works from a finished plan, so `medium` gets the same result for fewer tokens. The builder's work is fully specified, so `low` is enough.
-
-Precedence, highest first: the `CLAUDE_CODE_EFFORT_LEVEL` environment variable, then an effort passed for one delegation, then the agent's `effort:` field, then your session level. Your session level (`/effort`) only applies to agents on the same model as the main session, so tjforge pins each agent's level instead.
+| "Add Stripe checkout with webhooks" | Split: webhook and payment tables on Opus, checkout screen on Sonnet, then reviewer |
+| "Checkout fails for some users, no idea why" | Build investigates; Fable only if Opus cannot find the cause |
+| "Rename `userId` to `accountId` across the app" | Fill, split by folder |
+| "Should we split search into its own service?" | Advisor only |
 
 The full rules are in [references/routing.md](references/routing.md).
 
-### Parallel agents
+### Multi-task builds
 
-An agent file is a template, not a single worker. The main session can start several copies at once, one per task, and each copy runs on the model and effort pinned in its file. Two `tj-implementer` copies are both Opus 5.5 at medium, whatever the main session runs.
+A build of more than five tasks follows [references/build.md](references/build.md):
+
+- **The state lives on disk** in `docs/builds/<name>/`: `plan.md`, `tasks.json`, `resume.md` and `notes.md`. No conversation is the only record.
+- **The plan settles predictable design questions first**: where a new row could leak into an existing list, where secrets live, which actor writes, what stays unchanged for accounts without the feature, and what happens on exit.
+- **Tasks run in groups of 2 to 4, with a fresh lead session per group.** In the Claude desktop app, each group is its own chat in the sidebar, started by your main session. Elsewhere, run `/tjforge resume docs/builds/<name>` in a new session.
+- **Workers are cheap subagents inside each group's chat**, one task each.
 
 ```mermaid
 flowchart TD
-    M["Main session · Fable 5.2<br/>plans and splits the work"] --> I1["tj-implementer #1<br/>Opus 5.5 · medium<br/>payments API"]
-    M --> I2["tj-implementer #2<br/>Opus 5.5 · medium<br/>email notifications"]
-    M --> B1["tj-builder<br/>Sonnet 5.5 · low<br/>settings screen"]
-    I1 --> C["Main session checks each diff<br/>and reruns the tests once"]
-    I2 --> C
-    B1 --> C
-    C --> R["tj-reviewer · Opus 5.5 · high<br/>on the risky diff"]
-    R --> U([Report to you])
+    C["Your session<br/>conductor, holds no build detail"] --> G1["Group 1 chat · Sonnet lead"]
+    C --> G2["Group 2 chat · Sonnet lead"]
+    G1 --> W1["tj-implementer · Opus<br/>backend task"]
+    G1 --> W2["tj-builder · Sonnet<br/>screen task"]
+    G1 --> RF["resume.md · tasks.json"]
+    RF --> C
 ```
-
-| Situation | What happens |
-|---|---|
-| Independent tasks on different files | Separate copies, in parallel |
-| Small related tasks | One copy does them all, with one verification run (shared context loads once) |
-| Task B needs task A's result, or both edit the same file | One after another |
-
-- Each copy starts fresh. It knows only its brief and the project files.
-- Agents do not talk to each other. Each reports to the main session, which combines and checks the results.
-- Parallel agents share the working folder, so they are never given the same file. For full isolation, add `isolation: worktree` to an agent file. Each copy then works in its own git worktree, and you merge the branches afterwards.
 
 ### Budget
 
-Rules that keep token use down on every task:
-
 | Rule | Detail |
 |---|---|
-| Tests run once | The agent runs each suite once and the lead reruns it once. Three runs in a row only for money, auth or access-control changes, a suspected flaky test, or a release exit |
-| Cheapest proof first | Unit, then integration, then end to end. Full end-to-end only when the change is visible in a browser or touches a shared path |
-| Short briefs | At most 40 lines: goal, files, done-when, three review points. Docs by path, never pasted history |
-| Short reports | Implementer 200 words, builder 120, reviewer 300, unless a failure needs explaining |
-| Batch small work | Small related tasks go to one agent with one verification run |
-| Review by risk | The lead reads migrations, auth, money and the brief's review points closely, and skims the rest |
-| Ceiling | Past about 300k agent tokens or one hour, Claude stops and tells you why before continuing |
+| One task per worker | No pairs. A task that will not fit is split in the plan |
+| Hard stops | `maxTurns` in each agent; budgets Fill 150k, Build 250k tokens. At the limit a worker stops at a clean state and reports what is left |
+| Workers read little | `docs/worker-brief.md` (60 lines or fewer), their task, and the files the brief names. The brief lists what exists already |
+| Targeted tests | Workers run only the tests their task added or changed. The lead runs full suites once per group, at halfway and at exit |
+| Quiet output | `.claude/tjforge/quiet-test.sh`: one line on a pass, the first failure on a fail, the full log on disk |
+| Short briefs and reports | Briefs 40 lines; reports 200 words (builder 150, scout 120, reviewer and advisor 300) |
+| Fix list | Flaky tests, wording and layout are batched to the end. Anything later work stands on is fixed at once |
+| Safety | No shell wait loops, no piping commands that start background processes, no seeds or resets by workers |
 
-Schema, money, security and concurrency always go to Opus. New UI on an expressive surface also stays on Opus, because the design brief is the first thing a cheaper model drops. Screens that copy an existing pattern can go to Sonnet.
+Why these effort levels: review and advice are where deeper reasoning catches mistakes, and they run rarely, so they get `high`. The implementer works from a finished brief, so `medium` is enough. The builder and scout do specified work, so `low` is enough.
+
+Precedence, highest first: the `CLAUDE_CODE_EFFORT_LEVEL` environment variable, then an effort passed for one delegation, then the agent's `effort:` field, then your session level.
+
+Parallel workers share the working folder, so they are never given the same file. Writes run one at a time by default; read-only helpers (scout, explore, reviewer) may run in parallel. For full isolation, add `isolation: worktree` to an agent file.
 
 ## No AI attribution
 
@@ -344,33 +341,40 @@ tjforge also points Claude at other installed skills for depth (`clean-architect
 ```
 SKILL.md                    entry point Claude Code loads
 references/
-  routing.md                model tiers, escalation, brief template
+  routing.md                model tiers, escalation, brief template, budget
+  build.md                  multi-task builds: plan, state files, groups, sessions
   standards.md              how to fill the profile
   design-brief.md           design directions and anti-generic rules
 scripts/
   detect.sh                 read-only project fact sheet
   install.py                idempotent installer; --check to audit
+  update_check.py           once-a-day check for a newer tjforge
 templates/
   PROJECT-PROFILE.md
   DESIGN.md
   claude-md-block.md
-  agents/                   the four tj-* subagents
+  worker-brief.md
+  decisions-log.md
+  agents/                   the five tj-* subagents
+  build/                    plan.md, tasks.json, resume.md, notes.md
+  scripts/quiet-test.sh
   githooks/commit-msg
+VERSION, CHANGELOG.md
 ```
 
 ## Customising
 
-- **Models and effort.** The agents pin exact model IDs (`claude-fable-5-2`, `claude-opus-5-5`, `claude-sonnet-5-5`) and an `effort:` level (`low`, `medium`, `high`, `xhigh` or `max`; available levels depend on the model) in `templates/agents/*.md`. Change those lines; each project picks them up on its next `/tjforge` run, or straight away with `/tjforge sync`.
+- **Models and effort.** The agents pin exact model IDs (`claude-fable-5-2`, `claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-5-5`), a `maxTurns` hard stop and an `effort:` level (`low`, `medium`, `high`, `xhigh` or `max`; available levels depend on the model) in `templates/agents/*.md`. Change those lines; each project picks them up on its next `/tjforge` run, or straight away with `/tjforge sync`.
 - **Rules.** Edit the files in `references/`. They are plain Markdown and are read fresh on every run.
 - **Per project.** Edit `docs/PROJECT-PROFILE.md` or `DESIGN.md` directly. Claude treats them as the contract, and they override tjforge's defaults.
 
 ## What to expect
 
-tjforge is designed to use fewer tokens, finish faster and produce more consistent work. Those gains have not been benchmarked. To measure them, run the same task on two copies of a project, with and without tjforge, and compare tokens, time and the result.
+tjforge is designed to use fewer tokens, finish faster and produce more consistent work. Only one rule has before-and-after evidence: splitting features into an Opus backend task and a Sonnet screen task cut the screen half to 60k-150k tokens, against 300k-400k for a whole feature on Opus. The rest has not been benchmarked. To measure them, run the same task on two copies of a project, with and without tjforge, and compare tokens, time and the result.
 
 | | Expected effect | Why |
 |---|---|---|
-| Tokens | Lower | Trivial edits inline, mechanical work on Sonnet at low effort, tests run once, capped briefs and reports |
+| Tokens | Lower | Sonnet leads and does most of the work, Opus only the risky parts, short-lived lead sessions, short worker briefs, targeted and quiet tests |
 | Speed | Usually faster | Low-effort agents, parallel copies, fewer reruns. Slower for the one-time `init`, and for tiny tasks if they were delegated (they are not) |
 | Quality | More consistent | Same contract and design brief every session, tests rerun by the lead, independent review of risky changes |
 
@@ -378,7 +382,8 @@ It does not make the work perfect:
 
 - Claude follows the written rules most of the time, not always. Only the commit hook and the attribution setting are enforced mechanically.
 - A task misrouted to Sonnet costs one retry on Opus.
-- Short reports can hide detail. That is why the lead reruns the tests itself.
+- Short reports can hide detail. That is why the lead reads the risky diff and runs full suites per group.
+- `tj-scout` on Haiku is a trial. If its lookups are wrong, route them to Sonnet.
 - Review the result yourself, especially design taste, business logic and anything going to production.
 
 ## Notes

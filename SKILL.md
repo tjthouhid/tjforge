@@ -1,7 +1,7 @@
 ---
 name: tjforge
-description: Sets up and enforces a project's engineering contract - detected stack, system design, coding standards, design brief, three-tier model routing (Fable 5.2 thinks, Opus 5.5 builds, Sonnet 5.5 fills) and a no-AI-attribution git hook. Use when the user says "/tjforge", "set up this project", "init engineering", "apply my engineering rules", starts work in a project that has no docs/PROJECT-PROFILE.md, or asks for a large feature in a project that has one.
-argument-hint: "[init | design | check | sync | <task>]"
+description: Sets up and enforces a project's engineering contract - detected stack, system design, coding standards, design brief, cost-first model routing (Sonnet 5.5 leads and fills, Opus 5.5 builds the risky parts, Fable 5.2 advises on call, Haiku 5.5 scouts) and a no-AI-attribution git hook. Use when the user says "/tjforge", "set up this project", "init engineering", "apply my engineering rules", starts work in a project that has no docs/PROJECT-PROFILE.md, or asks for a large feature in a project that has one.
+argument-hint: "[init | design | check | sync | resume <dir> | <task>]"
 ---
 
 # tjforge
@@ -18,6 +18,7 @@ On every run except Init (which installs anyway) and `check`, start with:
 
 ```bash
 python3 "${CLAUDE_SKILL_DIR}/scripts/install.py" --quiet
+python3 "${CLAUDE_SKILL_DIR}/scripts/update_check.py"
 ```
 
 It brings the project's agents, hook, settings and CLAUDE.md block up to date
@@ -27,6 +28,10 @@ means everything was already current: say nothing about it. Otherwise relay
 the `updated` and `WARN` lines in one or two lines. Never re-run it with
 `--force` unless the user asks.
 
+The update check prints one line when a newer tjforge is published, at most
+once a day, and nothing otherwise. Relay that line as it is. Never pull or
+update the skill yourself.
+
 ## Pick the mode
 
 | Condition | Mode |
@@ -35,6 +40,7 @@ the `updated` and `WARN` lines in one or two lines. Never re-run it with
 | argument `design` | Design brief only (step 3, then rewrite `DESIGN.md`) |
 | argument `check` | Run `python3 "${CLAUDE_SKILL_DIR}/scripts/install.py" --check` and report |
 | argument `sync` | Run the sync above without `--quiet` and report; nothing else |
+| argument `resume <dir>` | Resume a multi-task build: `references/build.md` section 5 |
 | anything else | Work, with the arguments as the task |
 
 ## Init
@@ -54,10 +60,14 @@ the `updated` and `WARN` lines in one or two lines. Never re-run it with
    AskUserQuestion: accept or adjust. Empty project: first ask at most three
    questions (what is being built, preferred stack or "recommend one", UI or
    not), then recommend.
-5. **Write** `docs/PROJECT-PROFILE.md` and, for UI projects, `DESIGN.md`.
+5. **Write** `docs/PROJECT-PROFILE.md`, `docs/decisions-log.md` (from
+   `templates/decisions-log.md`), `docs/worker-brief.md` (from
+   `templates/worker-brief.md`: the standing rules a worker needs, 60 lines or
+   fewer) and, for UI projects, `DESIGN.md`.
 6. **Install.** Run `python3 "${CLAUDE_SKILL_DIR}/scripts/install.py"` from the
    project root. It is idempotent and installs:
-   - `.claude/agents/tj-architect.md`, `tj-implementer.md`, `tj-builder.md`, `tj-reviewer.md`
+   - `.claude/agents/tj-architect.md`, `tj-implementer.md`, `tj-builder.md`, `tj-reviewer.md`, `tj-scout.md`
+   - `.claude/tjforge/quiet-test.sh`, the quiet test wrapper
    - `.claude/settings.json` with attribution turned off
    - `.githooks/commit-msg` and the git config that activates it
    - the tjforge block in `CLAUDE.md`
@@ -73,8 +83,9 @@ Do not commit anything during Init unless the user asks.
 1. Read `docs/PROJECT-PROFILE.md`. For UI work also read `DESIGN.md`.
 2. Classify the task and route it with `references/routing.md`. Read that file
    before the first delegation in a session.
-3. Big task: plan on the Think tier first, then dispatch Build and Fill agents
-   with the brief template. Small task: do it inline.
+3. Small task: do it inline. Big task: write a short plan, then dispatch
+   workers with the brief template. More than five tasks: follow
+   `references/build.md` (state on disk, groups, a fresh session per group).
 4. Verify with the profile's commands. Check agent diffs yourself.
 5. If the work made an architectural or design decision, add one line to the
    profile's Decisions log or to `DESIGN.md`.
@@ -101,7 +112,8 @@ Open: <risks or leftovers, or "none">
   publishing) need the user's go-ahead each time.
 - Do not send trivial work to an agent, and do not send open questions to
   Sonnet.
-- Follow the Budget section of `references/routing.md`: tests once each by the
-  agent and once by you, cheapest proof first, briefs of 40 lines or fewer,
-  reports of 200 words or fewer, and stop to ask before a task passes about
-  300k agent tokens or one hour.
+- Follow the Budget and Safety sections of `references/routing.md`: one task
+  per worker, workers run only their own tests, full suites per group, quiet
+  test output, briefs of 40 lines or fewer, reports of 200 words or fewer,
+  hard budgets (Fill 150k, Build 250k) where a worker stops and reports
+  instead of asking, no waiting loops, no seeds or resets by workers.

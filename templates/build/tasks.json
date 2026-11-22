@@ -1,0 +1,6 @@
+{
+  "build": "<name>",
+  "tasks": [
+    {"id": "T1", "group": 1, "tier": "build", "title": "", "files": [], "status": "todo", "tokens": null}
+  ]
+}

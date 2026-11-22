@@ -42,6 +42,9 @@
 - Typecheck: `...`
 - Build: `...`
 - Tests are required for:
+- Run one test file: `...` <!-- how a worker runs only its own tests -->
+- Isolation suites (workers always run these): <!-- e.g. tenant isolation, RLS; or none -->
+- Destructive commands (workers never run these): <!-- seeds, resets, drops, prod scripts -->
 
 ## Git
 - Default branch and branching:
@@ -55,10 +58,12 @@
 - Accessibility:
 
 ## Model routing
-- Think: Fable 5.2 (main session or `tj-architect`)
-- Build: Opus 5.5 (`tj-implementer`, `tj-reviewer`)
-- Fill: Sonnet 5.5 (`tj-builder`, `Explore`)
+- Lead of a multi-task build: Sonnet 5.5 (Opus 5.5 for a mostly risky build), fresh session per group
+- Fill (default worker): Sonnet 5.5 (`tj-builder`, `Explore`)
+- Build (risky parts only): Opus 5.5 (`tj-implementer`, `tj-reviewer`)
+- Scout (lookups, test runs; trial): Haiku 5.5 (`tj-scout`)
+- Advisor (rulings, hard root causes; on call): Fable 5.2 (`tj-architect`)
 - Project-specific overrides: <!-- e.g. "all payment code is Build tier and always reviewed" -->
 
 ## Decisions log
-<!-- YYYY-MM-DD - decision - why -->
+In `docs/decisions-log.md`, so workers do not read it on every task.

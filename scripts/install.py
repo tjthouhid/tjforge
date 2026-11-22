@@ -12,6 +12,7 @@ one that was edited in the project is left alone with a WARN line.
 
 Installs:
   .claude/agents/tj-*.md      subagents pinned to their models
+  .claude/tjforge/quiet-test.sh  quiet test wrapper (logs/ is git-ignored)
   .claude/settings.json       attribution off (commit and PR)
   .githooks/commit-msg        strips AI-attribution trailers, and is activated
   CLAUDE.md                   the tjforge block (between markers)
@@ -106,6 +107,20 @@ def sync_file(src, dst, executable=False):
 def agents():
     for src in sorted((TEMPLATES / "agents").glob("*.md")):
         sync_file(src, ROOT / ".claude" / "agents" / src.name)
+
+
+def tools():
+    sync_file(TEMPLATES / "scripts" / "quiet-test.sh", ROOT / ".claude" / "tjforge" / "quiet-test.sh", executable=True)
+    ignore = ROOT / ".claude" / "tjforge" / ".gitignore"
+    if ignore.exists() and "logs/" in ignore.read_text():
+        report("ok", ".claude/tjforge/.gitignore")
+    elif CHECK:
+        report("MISSING", ".claude/tjforge/.gitignore")
+    else:
+        ignore.parent.mkdir(parents=True, exist_ok=True)
+        text = ignore.read_text() if ignore.exists() else ""
+        ignore.write_text(text + ("" if text.endswith("\n") or not text else "\n") + "logs/\n")
+        report("wrote", ".claude/tjforge/.gitignore")
 
 
 def settings():
@@ -231,6 +246,7 @@ def contract():
 
 
 agents()
+tools()
 settings()
 hook()
 claude_md()

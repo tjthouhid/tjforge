@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>tjforge · Claude Code skill</title>
-<meta name="description" content="A Claude Code skill that writes your project's engineering contract once, routes work across Fable, Opus and Sonnet, and keeps AI attribution out of your git history.">
+<meta name="description" content="A Claude Code skill that writes your project's engineering contract once, routes work to the cheapest model that gets it right (Sonnet leads, Opus builds the risky parts, Fable advises), and keeps AI attribution out of your git history.">
 <meta property="og:title" content="tjforge · Claude Code skill">
 <meta property="og:description" content="Decide how a project is built once. Every Claude Code session follows it.">
 <meta property="og:type" content="website">
@@ -12,10 +12,58 @@
 <meta property="og:image" content="https://tjthouhid.github.io/tjforge/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="tjforge: Decide once. Build the same way. Fable plans, Opus builds, Sonnet fills.">
+<meta property="og:image:alt" content="tjforge: Decide once. Build the same way. Sonnet leads, Opus builds, Fable advises.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="https://tjthouhid.github.io/tjforge/og.png">
 <meta name="theme-color" content="#F1ECE2">
+<meta name="author" content="Tj Thouhid">
+<link rel="author" href="https://tjthouhid.me">
+<link rel="canonical" href="https://tjthouhid.github.io/tjforge/">
+<meta name="twitter:title" content="tjforge · Claude Code skill">
+<meta name="twitter:description" content="Decide how a project is built once. Every Claude Code session follows it.">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareSourceCode",
+  "name": "tjforge",
+  "description": "A Claude Code skill that writes a project's engineering contract once, routes work to the cheapest model that gets it right, and keeps AI attribution out of git history.",
+  "url": "https://tjthouhid.github.io/tjforge/",
+  "codeRepository": "https://github.com/tjthouhid/tjforge",
+  "programmingLanguage": [
+    "Python",
+    "Shell",
+    "Markdown"
+  ],
+  "license": "https://opensource.org/licenses/MIT",
+  "version": "2.0.0",
+  "author": {
+    "@type": "Person",
+    "@id": "https://tjthouhid.me/#person",
+    "name": "Tj Thouhid",
+    "url": "https://tjthouhid.me",
+    "jobTitle": "Senior Software Engineer",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "London",
+      "addressCountry": "GB"
+    },
+    "knowsAbout": [
+      "Laravel",
+      "Next.js",
+      "NestJS",
+      "Node.js",
+      "React",
+      "PostgreSQL",
+      "AWS",
+      "Claude Code"
+    ],
+    "sameAs": [
+      "https://github.com/tjthouhid",
+      "https://www.linkedin.com/in/tjthouhid"
+    ]
+  }
+}
+</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2314213D'/%3E%3Cpath d='M7 12h18l-3 5H10z' fill='%23E4572E'/%3E%3Crect x='14' y='17' width='4' height='6' fill='%23F1ECE2'/%3E%3Crect x='9' y='23' width='14' height='3' fill='%23F1ECE2'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -238,6 +286,7 @@ section[id] { scroll-margin-top: 64px; }
 .station[data-s="think"] .who { color: var(--fable); }
 .station[data-s="build"] .who, .station[data-s="review"] .who { color: var(--opus); }
 .station[data-s="fill"] .who { color: var(--sonnet); }
+.station[data-s="scout"] .who { color: var(--muted); }
 .station[data-s="inline"] .who, .station[data-s="check"] .who, .station[data-s="report"] .who { color: var(--muted); }
 .trace { margin-top: 20px; border-top: 1px solid var(--line); padding-top: 16px; font: 400 14px/1.6 var(--mono); min-height: 5.2em; }
 .trace .why { color: var(--ink-soft); font-family: var(--body); font-size: 15px; margin-top: 8px; }
@@ -353,6 +402,16 @@ section[id] { scroll-margin-top: 64px; }
 .star-icon { transition: transform .5s var(--ease); }
 .btn:hover .star-icon { transform: rotate(72deg) scale(1.15); }
 
+.author { padding: 96px 0; border-bottom: 1px solid var(--line); }
+.author .grid { display: grid; grid-template-columns: 180px 1fr; gap: 24px; }
+.author .num { font: 400 13px/1 var(--mono); color: var(--signal); padding-top: 14px; }
+.author h2 { font: 400 clamp(36px, 5vw, 64px)/.95 var(--display); letter-spacing: -.02em; margin: 0; }
+.author h2 a { color: inherit; text-decoration: none; border-bottom: 2px solid var(--signal); }
+.author h2 a:hover { color: var(--signal); }
+.author .role { font: 500 13px/1.4 var(--mono); color: var(--muted); margin: 14px 0 0; letter-spacing: .04em; }
+.author p.bio { max-width: 60ch; color: var(--ink-soft); font-size: 18px; margin: 20px 0 28px; }
+.author .row { display: flex; flex-wrap: wrap; gap: 12px; }
+@media (max-width: 760px) { .author .grid { grid-template-columns: 1fr; gap: 12px; } .author { padding: 72px 0; } }
 footer { padding: 32px 0 48px; }
 footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 16px; font: 400 12px/1.6 var(--mono); color: var(--muted); }
 footer a { color: var(--ink-soft); }
@@ -420,7 +479,7 @@ footer a { color: var(--ink-soft); }
         <span class="l"><b>installs so far</b><small data-installs-since></small></span>
       </div>
       <div class="hero-meta">
-        <span>Fable 5.2 plans</span><span>Opus 5.5 builds</span><span>Sonnet 5.5 fills in</span><span>no Co-Authored-By</span>
+        <span>Sonnet 5.5 leads</span><span>Opus 5.5 builds the risky parts</span><span>Fable 5.2 on call</span><span>no Co-Authored-By</span>
       </div>
     </div>
 
@@ -453,15 +512,18 @@ footer a { color: var(--ink-soft); }
 ├── CLAUDE.md                <span class="c"># tjforge block</span>
 ├── DESIGN.md                <span class="c"># design brief</span>
 ├── docs/
-│   └── PROJECT-PROFILE.md   <span class="c"># the contract</span>
+│   ├── PROJECT-PROFILE.md   <span class="c"># the contract</span>
+│   └── worker-brief.md      <span class="c"># what workers read</span>
 ├── .claude/
 │   ├── settings.json        <span class="c"># attribution off</span>
 │   ├── tjforge.lock.json    <span class="c"># protects your edits</span>
+│   ├── tjforge/quiet-test.sh <span class="c"># quiet test output</span>
 │   └── agents/
-│       ├── <span class="h">tj-architect.md</span>  <span class="c"># Fable · high</span>
+│       ├── <span class="h">tj-builder.md</span>    <span class="c"># Sonnet · low</span>
 │       ├── <span class="h">tj-implementer.md</span><span class="c"># Opus · medium</span>
 │       ├── <span class="h">tj-reviewer.md</span>   <span class="c"># Opus · high</span>
-│       └── <span class="h">tj-builder.md</span>    <span class="c"># Sonnet · low</span>
+│       ├── <span class="h">tj-architect.md</span>  <span class="c"># Fable · on call</span>
+│       └── <span class="h">tj-scout.md</span>      <span class="c"># Haiku · trial</span>
 └── .githooks/
     └── commit-msg           <span class="c"># strips trailers</span></div>
       <div class="prose reveal">
@@ -479,7 +541,7 @@ footer a { color: var(--ink-soft); }
       <span class="num">02 / Model routing</span>
       <div>
         <h2>The cheapest model that gets it <em>right the first time.</em></h2>
-        <p>Pick a request and watch where it goes. A wrong cheap attempt costs more than one correct expensive one; an expensive model on mechanical work is waste.</p>
+        <p>Pick a request and watch where it goes. Sonnet does most of the work, Opus takes only the risky part, and Fable is an advisor you call, not the lead. A wrong cheap attempt costs more than one correct expensive one; an expensive model on mechanical work is waste.</p>
       </div>
     </div>
 
@@ -495,10 +557,11 @@ footer a { color: var(--ink-soft); }
       <div class="board" aria-live="polite">
         <div class="stations">
           <div class="station" data-s="inline"><span class="order"></span><div class="who">Main session</div><div class="what">Inline</div><div class="eff">no agent</div></div>
-          <div class="station" data-s="think"><span class="order"></span><div class="who">Fable 5.2</div><div class="what">Think</div><div class="eff">tj-architect · high</div></div>
-          <div class="station" data-s="build"><span class="order"></span><div class="who">Opus 5.5</div><div class="what">Build</div><div class="eff">tj-implementer · medium</div></div>
           <div class="station" data-s="fill"><span class="order"></span><div class="who">Sonnet 5.5</div><div class="what">Fill</div><div class="eff">tj-builder · low</div></div>
-          <div class="station" data-s="check"><span class="order"></span><div class="who">Lead</div><div class="what">Check</div><div class="eff">reruns tests once</div></div>
+          <div class="station" data-s="build"><span class="order"></span><div class="who">Opus 5.5</div><div class="what">Build</div><div class="eff">tj-implementer · medium</div></div>
+          <div class="station" data-s="think"><span class="order"></span><div class="who">Fable 5.2</div><div class="what">Advise</div><div class="eff">tj-architect · on call</div></div>
+          <div class="station" data-s="scout"><span class="order"></span><div class="who">Haiku 5.5</div><div class="what">Scout</div><div class="eff">tj-scout · runs tests</div></div>
+          <div class="station" data-s="check"><span class="order"></span><div class="who">Lead</div><div class="what">Check</div><div class="eff">risky diff, cheapest check</div></div>
           <div class="station" data-s="review"><span class="order"></span><div class="who">Opus 5.5</div><div class="what">Review</div><div class="eff">tj-reviewer · high</div></div>
           <div class="station" data-s="report"><span class="order"></span><div class="who">You</div><div class="what">Report</div><div class="eff">what ran, what didn't</div></div>
         </div>
@@ -510,10 +573,11 @@ footer a { color: var(--ink-soft); }
       <table class="tiers">
         <thead><tr><th>Tier</th><th>Model · effort</th><th>Takes</th></tr></thead>
         <tbody>
-          <tr><td><span class="dot" style="background:var(--fable)"></span>Think</td><td class="mono">Fable 5.2 · high</td><td>Research, architecture, plans for big tasks, unknown-cause bugs, trade-offs</td></tr>
-          <tr><td><span class="dot" style="background:var(--opus)"></span>Build</td><td class="mono">Opus 5.5 · medium</td><td>Multi-file features, schema, money, auth, concurrency, new expressive UI</td></tr>
-          <tr><td><span class="dot" style="background:var(--opus)"></span>Review</td><td class="mono">Opus 5.5 · high</td><td>Independent pass on risky diffs, given the diff, not the conclusion</td></tr>
-          <tr><td><span class="dot" style="background:var(--sonnet)"></span>Fill</td><td class="mono">Sonnet 5.5 · low</td><td>Fully specified boilerplate, screens from an existing pattern, tests, docs, renames, config</td></tr>
+          <tr><td><span class="dot" style="background:var(--sonnet)"></span>Fill</td><td class="mono">Sonnet 5.5 · low</td><td>The default worker, and the lead of long builds. Anything that copies a named pattern: routes, screens, tests, e2e specs, docs, config</td></tr>
+          <tr><td><span class="dot" style="background:var(--opus)"></span>Build</td><td class="mono">Opus 5.5 · medium</td><td>Only the risky part: schema, access rules, money, concurrency, a new provider interface, an unknown-cause bug, expressive UI</td></tr>
+          <tr><td><span class="dot" style="background:var(--opus)"></span>Review</td><td class="mono">Opus 5.5 · high</td><td>Independent pass on risky diffs, given the diff, not the conclusion. Ranks findings, skips style</td></tr>
+          <tr><td><span class="dot" style="background:var(--fable)"></span>Advise</td><td class="mono">Fable 5.2 · high</td><td>On call: a ruling when a worker is blocked, a root cause Opus missed, a trade-off you ask about. 300 words, then back</td></tr>
+          <tr><td><span class="dot" style="background:var(--muted)"></span>Scout</td><td class="mono">Haiku 5.5 · low</td><td>Trial tier. Read-only lookups and test runs through the quiet wrapper</td></tr>
           <tr><td><span class="dot" style="background:var(--muted)"></span>Inline</td><td class="mono">current session</td><td>One file, about 20 lines, obvious. Delegating would cost more than doing it</td></tr>
         </tbody>
       </table>
@@ -524,46 +588,46 @@ footer a { color: var(--ink-soft); }
 <section class="block" id="parallel">
   <div class="wrap">
     <div class="sec-head reveal">
-      <span class="num">03 / In parallel</span>
+      <span class="num">03 / Long builds</span>
       <div>
-        <h2>Several agents. <em>One lead.</em></h2>
-        <p>An agent file is a template, not a single worker. Independent tasks get their own copies at the same time, each on the model pinned in its file. Every copy reports back to the main session, which checks the work.</p>
+        <h2>Many tasks. <em>Short sessions.</em></h2>
+        <p>A build of more than five tasks keeps its plan and progress in files, not in one long chat. Tasks run in groups of two to four, each group with a fresh Sonnet lead. In the Claude desktop app, every group is its own chat in the sidebar. Inside it, each task goes to one cheap worker.</p>
       </div>
     </div>
 
     <div class="fan reveal">
-      <svg viewBox="0 0 1200 420" role="img" aria-label="The main session on Fable 5.2 sends three tasks in parallel: two tj-implementer copies on Opus 5.5 and one tj-builder on Sonnet 5.5. All report back, and the risky one goes to tj-reviewer.">
-        <text class="lead-text" x="0" y="58">Fable plans.</text>
-        <text class="sub" x="0" y="88">main session</text><text class="sub" x="0" y="108">splits work, no shared files</text>
+      <svg viewBox="0 0 1200 420" role="img" aria-label="A group chat led by Sonnet 5.5 hands one task to each worker: the backend task to tj-implementer on Opus 5.5, the screen task to tj-builder on Sonnet 5.5, and the test run to tj-scout on Haiku 5.5. All report back; the lead writes resume.md and the next group starts in a fresh chat.">
+        <text class="lead-text" x="0" y="58">Sonnet leads.</text>
+        <text class="sub" x="0" y="88">one group, one fresh chat</text><text class="sub" x="0" y="108">state in resume.md, not the chat</text>
         <path id="w1" class="wire" d="M330 70 C 440 70, 450 50, 560 50"/>
         <path id="w2" class="wire" d="M330 70 C 440 70, 450 190, 560 190"/>
         <path id="w3" class="wire" d="M330 70 C 440 70, 450 330, 560 330"/>
-        <g><rect class="box hot" x="560" y="10" width="300" height="80" rx="4"/><text class="lbl" x="580" y="44">tj-implementer #1</text><text class="sub" x="580" y="68">Opus 5.5 · medium · payments API</text></g>
-        <g><rect class="box" x="560" y="150" width="300" height="80" rx="4"/><text class="lbl" x="580" y="184">tj-implementer #2</text><text class="sub" x="580" y="208">Opus 5.5 · medium · email notices</text></g>
-        <g><rect class="box" x="560" y="290" width="300" height="80" rx="4"/><text class="lbl" x="580" y="324">tj-builder</text><text class="sub" x="580" y="348">Sonnet 5.5 · low · settings screen</text></g>
+        <g><rect class="box hot" x="560" y="10" width="300" height="80" rx="4"/><text class="lbl" x="580" y="44">tj-implementer</text><text class="sub" x="580" y="68">Opus 5.5 · medium · backend task</text></g>
+        <g><rect class="box" x="560" y="150" width="300" height="80" rx="4"/><text class="lbl" x="580" y="184">tj-builder</text><text class="sub" x="580" y="208">Sonnet 5.5 · low · screen task</text></g>
+        <g><rect class="box" x="560" y="290" width="300" height="80" rx="4"/><text class="lbl" x="580" y="324">tj-scout</text><text class="sub" x="580" y="348">Haiku 5.5 · low · test run</text></g>
         <path id="r1" class="wire" d="M860 50 C 960 50, 960 190, 1010 190"/>
         <path id="r2" class="wire" d="M860 190 L 1010 190"/>
         <path id="r3" class="wire" d="M860 330 C 960 330, 960 190, 1010 190"/>
-        <g><rect class="box" x="1010" y="150" width="190" height="80" rx="4"/><text class="lbl" x="1028" y="184">Lead checks</text><text class="sub" x="1028" y="208">reviewer on #1</text></g>
+        <g><rect class="box" x="1010" y="150" width="190" height="80" rx="4"/><text class="lbl" x="1028" y="184">resume.md</text><text class="sub" x="1028" y="208">then a fresh chat</text></g>
         <circle class="pulse" r="6"><animateMotion dur="2.6s" repeatCount="indefinite"><mpath href="#w1"/></animateMotion></circle>
         <circle class="pulse" r="6"><animateMotion dur="3.1s" repeatCount="indefinite"><mpath href="#w2"/></animateMotion></circle>
         <circle class="pulse" r="6"><animateMotion dur="3.6s" repeatCount="indefinite"><mpath href="#w3"/></animateMotion></circle>
       </svg>
-      <div class="fan-mobile" aria-hidden="true">Fable plans (main session)
- ├─ tj-implementer #1  Opus · medium
- │    payments API
- ├─ tj-implementer #2  Opus · medium
- │    email notices
- └─ tj-builder         Sonnet · low
-      settings screen
+      <div class="fan-mobile" aria-hidden="true">Sonnet leads (one group, fresh chat)
+ ├─ tj-implementer   Opus
+ │    backend task
+ ├─ tj-builder       Sonnet
+ │    screen task
+ └─ tj-scout         Haiku
+      runs the tests
         ↓ all report back
- Lead checks → tj-reviewer on #1</div>
+ resume.md → next group, new chat</div>
     </div>
 
     <div class="fan-notes">
-      <div class="reveal"><b>Parallel when independent</b><p>Different files, no result needed from each other: separate copies at the same time.</p></div>
-      <div class="reveal"><b>Batched when small</b><p>Small related changes go to one agent with one verification run. Shared context loads once.</p></div>
-      <div class="reveal"><b>In order when dependent</b><p>The API before the screen that calls it. Two agents never edit the same file.</p></div>
+      <div class="reveal"><b>One task per worker</b><p>Each worker reads a 60-line brief and its own task, has a hard budget, and stops at a clean state instead of asking.</p></div>
+      <div class="reveal"><b>Features split in two</b><p>The backend task goes to Opus, the screen that calls it to Sonnet. Two workers never edit the same file.</p></div>
+      <div class="reveal"><b>Tests that stay quiet</b><p>Workers run only their own tests, through a wrapper that prints one line on a pass. Full suites run once per group.</p></div>
     </div>
   </div>
 </section>
@@ -659,17 +723,17 @@ footer a { color: var(--ink-soft); }
         </div>
         <div class="panel" role="tabpanel" id="p-up" aria-labelledby="t-up" hidden>
           <div class="cmd"><code>git -C ~/.claude/skills/tjforge pull</code><button class="copy" type="button">Copy</button></div>
-          <p>Each project syncs itself the next time you run <code class="mono">/tjforge</code> there, or straight away with <code class="mono">/tjforge sync</code>.</p>
+          <p>Each project syncs itself the next time you run <code class="mono">/tjforge</code> there, or straight away with <code class="mono">/tjforge sync</code>. <code class="mono">/tjforge</code> also tells you, at most once a day, when a new version is out. What changed is in the <a href="https://github.com/tjthouhid/tjforge/blob/main/CHANGELOG.md" target="_blank" rel="noopener">changelog</a>.</p>
         </div>
       </div>
 
       <div class="quick reveal">
         <span class="tag">Then, in a project</span>
         <ol>
-          <li><span>Open it in Claude Code and pick <b>Fable 5.2</b>. High effort for big planning, medium for everyday work.</span></li>
+          <li><span>Open it in Claude Code and pick <b>Sonnet 5.5</b> (Opus 5.5 for a build that is mostly schema, money or access rules). Medium effort.</span></li>
           <li><span>Run <code>/tjforge init</code>. Accept the summary, pick a design direction if it has a UI.</span></li>
           <li><span>If the project had no <code>.claude/agents</code> folder, start a new session so the agents load.</span></li>
-          <li><span>Work normally. "Add a booking page." Fable plans and hands work to Opus and Sonnet itself.</span></li>
+          <li><span>Work normally. "Add a booking page." The session hands each task to the cheapest agent that can do it, and asks Fable only for rulings.</span></li>
         </ol>
       </div>
     </div>
@@ -686,6 +750,7 @@ footer a { color: var(--ink-soft); }
             <tr><td><code>/tjforge &lt;task&gt;</code></td><td>Does a task under the contract with model routing, e.g. <code class="mono">/tjforge add a booking page</code>. Plain requests follow the contract too, but don't sync first.</td><td>Everyday work</td></tr>
             <tr><td><code>/tjforge design</code></td><td>Redoes only the design brief: three new directions, then rewrites <code class="mono">DESIGN.md</code>.</td><td>Changing the look</td></tr>
             <tr><td><code>/tjforge sync</code></td><td>Brings agents, hook, settings and the CLAUDE.md block up to date. Never touches your profile or <code class="mono">DESIGN.md</code>, and skips files you edited.</td><td>After updating tjforge, or in a fresh clone</td></tr>
+            <tr><td><code>/tjforge resume &lt;dir&gt;</code></td><td>Picks up a multi-task build from its <code class="mono">resume.md</code> in a fresh session.</td><td>Next group of a long build</td></tr>
             <tr><td><code>/tjforge check</code></td><td>Reports what is installed, missing, outdated or edited. Changes nothing.</td><td>Anytime</td></tr>
             <tr class="group"><td colspan="3">In a terminal</td></tr>
             <tr><td><code>git -C ~/.claude/skills/tjforge pull</code></td><td>Updates the skill itself.</td><td>When a new version ships</td></tr>
@@ -716,11 +781,27 @@ footer a { color: var(--ink-soft); }
   </div>
 </section>
 
+<section class="author" id="author" itemscope itemtype="https://schema.org/Person">
+  <div class="wrap grid">
+    <span class="num">07 / Who made it</span>
+    <div class="reveal">
+      <h2>Made by <a href="https://tjthouhid.me" rel="author" itemprop="url"><span itemprop="name">Tj Thouhid</span></a></h2>
+      <p class="role"><span itemprop="jobTitle">Senior software engineer</span> and founder · <span itemprop="address">London, UK</span></p>
+      <p class="bio" itemprop="description">Tj builds secure, scalable web platforms end to end in Laravel, Next.js and NestJS, and has shipped for the web since 2013. Tj also founded TheCreativex, the studio behind <a href="https://lokstack.app" target="_blank" rel="noopener">Lokstack</a>. More work, writing and contact details are on tjthouhid.me.</p>
+      <div class="row">
+        <a class="btn solid" href="https://tjthouhid.me" rel="author">Portfolio · tjthouhid.me</a>
+        <a class="btn" href="https://github.com/tjthouhid" target="_blank" rel="me noopener" itemprop="sameAs">GitHub</a>
+        <a class="btn" href="https://www.linkedin.com/in/tjthouhid" target="_blank" rel="me noopener" itemprop="sameAs">LinkedIn</a>
+      </div>
+    </div>
+  </div>
+</section>
+
 </main>
 
 <footer>
   <div class="wrap">
-    <span>tjforge · MIT · by <a href="https://github.com/tjthouhid" target="_blank" rel="noopener">@tjthouhid</a></span>
+    <span>tjforge · MIT · by <a href="https://tjthouhid.me" rel="author">Tj Thouhid</a> · <a href="https://github.com/tjthouhid" target="_blank" rel="me noopener">GitHub</a></span>
     <span>An independent community skill for Claude Code. Not affiliated with Anthropic.</span>
   </div>
 </footer>
@@ -768,12 +849,14 @@ footer a { color: var(--ink-soft); }
     ['w', '  wrote   '], ['', '.claude/agents/tj-implementer.md\n'],
     ['w', '  wrote   '], ['', '.claude/agents/tj-reviewer.md\n'],
     ['w', '  wrote   '], ['', '.claude/agents/tj-builder.md\n'],
+    ['w', '  wrote   '], ['', '.claude/agents/tj-scout.md\n'],
+    ['w', '  wrote   '], ['', '.claude/tjforge/quiet-test.sh\n'],
     ['w', '  wrote   '], ['', '.claude/settings.json attribution off\n'],
     ['w', '  wrote   '], ['', 'git core.hooksPath = .githooks\n'],
     ['w', '  wrote   '], ['', 'CLAUDE.md tjforge block\n'],
     ['', '\n'],
     ['p', '› '], ['', 'add a booking page\n'],
-    ['d', '  Fable plans · Opus builds · lead checks'],
+    ['d', '  Opus builds the tables · Sonnet the screen · lead checks'],
   ];
   const term = document.getElementById('term');
   const caret = '<span class="caret" aria-hidden="true"></span>';
@@ -803,12 +886,12 @@ footer a { color: var(--ink-soft); }
   /* routing demo */
   const routes = {
     typo:    { path: ['inline', 'report'], why: 'One file, obvious change. Delegating would cost more tokens than doing it.' },
-    health:  { path: ['fill', 'check', 'report'], why: 'Fully specified and copies an existing pattern, so Sonnet at low effort. If it hits ambiguity, it moves up to Opus.' },
-    stripe:  { path: ['think', 'build', 'check', 'review', 'report'], why: 'Big and touches money: Fable plans, Opus builds, the lead reruns tests once, and an independent reviewer checks the diff.' },
-    bug:     { path: ['think', 'build', 'check', 'report'], why: 'Cause unknown, so Fable investigates first. Open questions never go to a cheaper model.' },
-    landing: { path: ['think', 'build', 'check', 'report'], why: 'Expressive UI stays on Opus: the design brief is the first thing a cheaper model drops.' },
+    health:  { path: ['fill', 'check', 'report'], why: 'Copies an existing pattern, so Sonnet at low effort. If it hits ambiguity, it moves up to Opus instead of retrying.' },
+    stripe:  { path: ['build', 'fill', 'scout', 'check', 'review', 'report'], why: 'Split in two: Opus builds the payment tables and webhooks, Sonnet builds the checkout screen that calls them, Haiku runs the tests, and an independent reviewer checks the money diff.' },
+    bug:     { path: ['build', 'think', 'check', 'report'], why: 'Cause unknown, so Opus investigates. Fable is asked only if Opus cannot find the cause after one real attempt, and answers in 300 words.' },
+    landing: { path: ['build', 'check', 'report'], why: 'Expressive UI stays on Opus: the design brief is the first thing a cheaper model drops.' },
   };
-  const names = { inline: 'inline', think: 'Fable plans', build: 'Opus builds', fill: 'Sonnet fills', check: 'lead checks', review: 'Opus reviews', report: 'report' };
+  const names = { inline: 'inline', think: 'Fable advises', build: 'Opus builds', fill: 'Sonnet fills', scout: 'Haiku tests', check: 'lead checks', review: 'Opus reviews', report: 'report' };
   const stations = [...document.querySelectorAll('.station')];
   const trace = document.getElementById('trace');
   let timers = [];
