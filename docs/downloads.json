@@ -1,7 +1,7 @@
 {
-  "updated": "2026-11-20",
-  "unique_cloners": 44,
-  "clones": 82,
+  "updated": "2026-11-23",
+  "unique_cloners": 96,
+  "clones": 176,
   "since": "2026-11-06",
   "days": [
     {
@@ -73,6 +73,21 @@
       "date": "2026-11-19",
       "clones": 41,
       "uniques": 19
+    },
+    {
+      "date": "2026-11-20",
+      "clones": 29,
+      "uniques": 16
+    },
+    {
+      "date": "2026-11-21",
+      "clones": 30,
+      "uniques": 19
+    },
+    {
+      "date": "2026-11-22",
+      "clones": 35,
+      "uniques": 17
     }
   ]
 }
